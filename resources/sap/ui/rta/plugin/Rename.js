@@ -5,9 +5,25 @@
  */
 
 // Provides class sap.ui.rta.plugin.Rename.
-sap.ui.define(['jquery.sap.global', 'sap/ui/rta/plugin/Plugin', 'sap/ui/dt/ElementUtil', 'sap/ui/dt/OverlayUtil',
-		'sap/ui/dt/OverlayRegistry', 'sap/ui/rta/Utils', 'sap/ui/dt/DOMUtil'],
-		function(jQuery, Plugin, ElementUtil, OverlayUtil, OverlayRegistry, Utils, DOMUtil) {
+sap.ui.define([
+	'jquery.sap.global',
+	'sap/ui/rta/plugin/Plugin',
+	'sap/ui/dt/Overlay',
+	'sap/ui/dt/ElementUtil',
+	'sap/ui/dt/OverlayUtil',
+	'sap/ui/dt/OverlayRegistry',
+	'sap/ui/rta/Utils',
+	'sap/ui/dt/DOMUtil'
+], function(
+	jQuery,
+	Plugin,
+	Overlay,
+	ElementUtil,
+	OverlayUtil,
+	OverlayRegistry,
+	Utils,
+	DOMUtil
+) {
 	"use strict";
 
 	/**
@@ -23,7 +39,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/plugin/Plugin', 'sap/ui/dt/Eleme
 	 * @extends sap.ui.rta.plugin.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.50.1
+	 * @version 1.50.3
 	 *
 	 * @constructor
 	 * @private
@@ -240,6 +256,11 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/plugin/Plugin', 'sap/ui/dt/Eleme
 
 		var oEditableControlDomRef = oDesignTimeMetadata.getAssociatedDomRef(oElement, vDomRef);
 
+		// if the Control is currently not visible on the screen, we have to scroll it into view
+		if (!Utils.isElementInViewport(oEditableControlDomRef)) {
+			oEditableControlDomRef.get(0).scrollIntoView();
+		}
+
 		this._$oEditableControlDomRef = jQuery(oEditableControlDomRef);
 
 		var oEditableControlOverlay = sap.ui.dt.OverlayRegistry.getOverlay(oEditableControlDomRef.id) || oOverlay;
@@ -257,8 +278,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/plugin/Plugin', 'sap/ui/dt/Eleme
 
 		DOMUtil.copyComputedStyle(this._$oEditableControlDomRef, this._$editableField);
 		this._$editableField.children().remove();
-		this._$editableField.offset({ left: this._$oEditableControlDomRef.offset().left });
-		this._$editableField.offset({ top: this._$oEditableControlDomRef.offset().top });
+		this._$editableField.css('visibility', 'hidden');
 
 		// TODO : for all browsers
 		this._$editableField.css({
@@ -269,7 +289,9 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/plugin/Plugin', 'sap/ui/dt/Eleme
 			"text-overflow" : "clip"
 		});
 
-		this._$oEditableControlDomRef.css("visibility", "hidden");
+		Overlay.getMutationObserver().ignoreOnce({
+			target: this._$oEditableControlDomRef.get(0)
+		});
 
 		this._$editableField.one("focus", this._onEditableFieldFocus.bind(this));
 
@@ -282,12 +304,23 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/plugin/Plugin', 'sap/ui/dt/Eleme
 		this._$editableField.on("click", this._stopPropagation.bind(this));
 		this._$editableField.on("mousedown", this._stopPropagation.bind(this));
 
-		this._$editableField.focus();
-
-		// keep Overlay selected while renaming
-		oOverlay.setSelected(true);
-
 		this.setOldValue(this._getCurrentEditableFieldText());
+
+		// BCP: 1780352883
+		setTimeout(function () {
+			this._$oEditableControlDomRef.css("visibility", "hidden");
+			this._$editableField.offset({ left: this._$oEditableControlDomRef.offset().left });
+			this._$editableField.offset({ top: this._$oEditableControlDomRef.offset().top });
+			this._$editableField.css('visibility', '');
+			this._$editableField.focus();
+
+			// keep Overlay selected while renaming
+			oOverlay.setSelected(true);
+			sap.ui.getCore().getEventBus().publish('sap.ui.rta', 'plugin.Rename.startEdit', {
+				overlay: oOverlay,
+				editableField: this._$editableField
+			});
+		}.bind(this), 0);
 	};
 
 	/**
@@ -323,6 +356,9 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/plugin/Plugin', 'sap/ui/dt/Eleme
 		}
 
 		this._oEditedOverlay.$().find(".sapUiRtaEditableField").remove();
+		Overlay.getMutationObserver().ignoreOnce({
+			target: this._$oEditableControlDomRef.get(0)
+		});
 		this._$oEditableControlDomRef.css("visibility", "visible");
 
 		if (bRestoreFocus) {
@@ -333,6 +369,9 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/plugin/Plugin', 'sap/ui/dt/Eleme
 			this._iStopTimeout = setTimeout(function() {
 				oOverlay.setSelected(true);
 				oOverlay.focus();
+				sap.ui.getCore().getEventBus().publish('sap.ui.rta', 'plugin.Rename.stopEdit', {
+					overlay: oOverlay
+				});
 			}, 500);
 		}
 

@@ -19,7 +19,7 @@ sap.ui.define([
 	 * @class The Settings allows trigger change of settings operations on the overlay
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.50.1
+	 * @version 1.50.3
 	 * @constructor
 	 * @private
 	 * @since 1.44
@@ -82,7 +82,7 @@ sap.ui.define([
 	 * @private
 	 */
 	Settings.prototype._getSettingsAction = function(oOverlay) {
-		return oOverlay.getDesignTimeMetadata().getAction("settings", oOverlay.getElementInstance());
+		return oOverlay.getDesignTimeMetadata() ? oOverlay.getDesignTimeMetadata().getAction("settings", oOverlay.getElementInstance()) : null;
 	};
 
 	/**

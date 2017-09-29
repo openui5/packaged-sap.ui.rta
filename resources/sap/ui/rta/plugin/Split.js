@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.50.1
+	 * @version 1.50.3
 	 * @constructor
 	 * @private
 	 * @since 1.46
@@ -59,7 +59,7 @@ sap.ui.define([
 	 * @private
 	 */
 	Split.prototype._getSplitAction = function(oOverlay) {
-		return oOverlay.getDesignTimeMetadata().getAction("split", oOverlay.getElementInstance());
+		return oOverlay.getDesignTimeMetadata() ? oOverlay.getDesignTimeMetadata().getAction("split", oOverlay.getElementInstance()) : null;
 	};
 
 	/**

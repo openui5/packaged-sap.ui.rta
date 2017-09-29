@@ -27,7 +27,7 @@ function(
 	 * @class Utility functionality to work with controls, e.g. iterate through aggregations, find parents, etc.
 	 *
 	 * @author SAP SE
-	 * @version 1.50.1
+	 * @version 1.50.3
 	 *
 	 * @private
 	 * @static
@@ -543,6 +543,27 @@ function(
 		}
 
 		return mDestination;
+	};
+
+	/**
+	 * Returns if the Dom Element is currently visible on the screen
+	 *
+	 * @param oDomElement {HTMLElement|jQuery} Element to be evaluated
+	 * @return {boolean} - returns if oDomElement is currently visible on the screen.
+	 */
+	Utils.isElementInViewport = function(oDomElement) {
+		if (oDomElement instanceof jQuery) {
+			oDomElement = oDomElement.get(0);
+		}
+
+		var mRect = oDomElement.getBoundingClientRect();
+
+		return (
+			mRect.top >= 0 &&
+			mRect.left >= 0 &&
+			mRect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+			mRect.right <= (window.innerWidth || document.documentElement.clientWidth)
+		);
 	};
 
 	return Utils;

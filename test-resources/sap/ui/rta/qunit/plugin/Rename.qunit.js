@@ -1,4 +1,4 @@
-/* global QUnit*/
+/* global QUnit, sinon*/
 
 QUnit.config.autostart = false;
 
@@ -7,19 +7,34 @@ jQuery.sap.require("sap.ui.thirdparty.sinon");
 jQuery.sap.require("sap.ui.thirdparty.sinon-ie");
 jQuery.sap.require("sap.ui.thirdparty.sinon-qunit");
 
-sap.ui.define([ "sap/ui/layout/VerticalLayout",
-				"sap/ui/dt/DesignTime",
-				"sap/ui/rta/command/CommandFactory",
-				"sap/ui/dt/OverlayRegistry",
-				"sap/ui/fl/registry/ChangeRegistry",
-				"sap/ui/layout/form/FormContainer",
-				"sap/ui/layout/form/Form",
-				"sap/ui/layout/form/FormLayout",
-				"sap/ui/rta/plugin/Rename",
-				"sap/ui/core/Title",
-				"sap/m/Button",
-				"sap/m/Label" ],
-	function(VerticalLayout, DesignTime, CommandFactory, OverlayRegistry, ChangeRegistry, FormContainer, Form, FormLayout, RenamePlugin, Title, Button, Label) {
+sap.ui.require([
+	"sap/ui/layout/VerticalLayout",
+	"sap/ui/dt/DesignTime",
+	"sap/ui/rta/command/CommandFactory",
+	"sap/ui/dt/OverlayRegistry",
+	"sap/ui/fl/registry/ChangeRegistry",
+	"sap/ui/layout/form/FormContainer",
+	"sap/ui/layout/form/Form",
+	"sap/ui/layout/form/FormLayout",
+	"sap/ui/rta/plugin/Rename",
+	"sap/ui/core/Title",
+	"sap/m/Button",
+	"sap/m/Label"
+],
+function(
+	VerticalLayout,
+	DesignTime,
+	CommandFactory,
+	OverlayRegistry,
+	ChangeRegistry,
+	FormContainer,
+	Form,
+	FormLayout,
+	RenamePlugin,
+	Title,
+	Button,
+	Label
+) {
 	"use strict";
 
 	QUnit.start();
@@ -41,7 +56,7 @@ sap.ui.define([ "sap/ui/layout/VerticalLayout",
 			});
 
 			this.oFormContainer = new FormContainer("formContainer",{
-				title: new Title({
+				title: new Title("title", {
 					text: "title"
 				})
 			});
@@ -92,11 +107,16 @@ sap.ui.define([ "sap/ui/layout/VerticalLayout",
 	});
 
 	QUnit.test("when a title gets renamed", function(assert) {
+		var fnDone = assert.async();
+		sap.ui.getCore().getEventBus().subscribeOnce('sap.ui.rta', 'plugin.Rename.startEdit', function (sChannel, sEvent, mParams) {
+			if (mParams.overlay === this.oFormContainerOverlay) {
+				assert.strictEqual(this.oFormContainerOverlay.getSelected(), true, "then the overlay is still selected");
+				this.oRenamePlugin._stopEdit(this.oFormContainerOverlay);
+				assert.strictEqual(this.oFormContainerOverlay.getSelected(), false, "then the overlay is not selected anymore");
+				fnDone();
+			}
+		}, this);
 		this.oRenamePlugin.startEdit(this.oFormContainerOverlay);
-		assert.strictEqual(this.oFormContainerOverlay.getSelected(), true, "then the overlay is still selected");
-
-		this.oRenamePlugin._stopEdit(this.oFormContainerOverlay);
-		assert.strictEqual(this.oFormContainerOverlay.getSelected(), false, "then the overlay is not selected anymore");
 	});
 
 	QUnit.test("when _isEditable is called", function(assert) {
@@ -149,9 +169,9 @@ sap.ui.define([ "sap/ui/layout/VerticalLayout",
 		assert.strictEqual(this.oRenamePlugin._isEditable(this.oFormContainerOverlay), false, "then rename is not editable for the overlay");
 	});
 
+
 	QUnit.module("Given a designTime and rename plugin are instantiated", {
 		beforeEach : function(assert) {
-			var that = this;
 			var done = assert.async();
 
 			this.oRenamePlugin = new RenamePlugin({
@@ -175,8 +195,8 @@ sap.ui.define([ "sap/ui/layout/VerticalLayout",
 							rename: {
 								changeType: "renameField",
 								domRef: function(oControl) {
-									return that.oLabel.getDomRef();
-								}
+									return this.oLabel.getDomRef();
+								}.bind(this)
 							}
 						}
 					}
@@ -184,15 +204,15 @@ sap.ui.define([ "sap/ui/layout/VerticalLayout",
 			});
 
 			this.oDesignTime.attachEventOnce("synced", function() {
-				that.oLayoutOverlay = OverlayRegistry.getOverlay(that.oVerticalLayout);
-				that.oButtonOverlay = OverlayRegistry.getOverlay(that.oButton);
-				that.oLabelOverlay = OverlayRegistry.getOverlay(that.oLabel);
-				that.oLayoutOverlay.setSelectable(true);
+				this.oLayoutOverlay = OverlayRegistry.getOverlay(this.oVerticalLayout);
+				this.oButtonOverlay = OverlayRegistry.getOverlay(this.oButton);
+				this.oLabelOverlay = OverlayRegistry.getOverlay(this.oLabel);
+				this.oLayoutOverlay.setSelectable(true);
 
 				sap.ui.getCore().applyChanges();
 
 				done();
-			});
+			}.bind(this));
 
 		},
 		afterEach : function(assert) {
@@ -202,48 +222,78 @@ sap.ui.define([ "sap/ui/layout/VerticalLayout",
 	});
 
 	QUnit.test("when the Label gets renamed", function(assert) {
+		var fnDone = assert.async();
+		sap.ui.getCore().getEventBus().subscribeOnce('sap.ui.rta', 'plugin.Rename.startEdit', function (sChannel, sEvent, mParams) {
+			if (mParams.overlay === this.oLayoutOverlay) {
+				assert.equal(this.oLayoutOverlay.getSelected(), true, "then the overlay is still selected");
+				this.oRenamePlugin._stopEdit(this.oLayoutOverlay);
+				assert.equal(this.oLayoutOverlay.getSelected(), false, "then the overlay is not selected anymore");
+				fnDone();
+			}
+		}, this);
 		this.oRenamePlugin.startEdit(this.oLayoutOverlay);
-		assert.equal(this.oLayoutOverlay.getSelected(), true, "then the overlay is still selected");
-
-		this.oRenamePlugin._stopEdit(this.oLayoutOverlay);
-		assert.equal(this.oLayoutOverlay.getSelected(), false, "then the overlay is not selected anymore");
 	});
 
 	QUnit.test("when the Label gets renamed and the new value is extremely long", function(assert) {
+		var fnDone = assert.async();
+		sap.ui.getCore().getEventBus().subscribeOnce('sap.ui.rta', 'plugin.Rename.startEdit', function (sChannel, sEvent, mParams) {
+			if (mParams.overlay === this.oLayoutOverlay) {
+				this.oRenamePlugin._$oEditableControlDomRef.text("123456789012345678901234567890123456789012345678901234567890");
+				this.oRenamePlugin._$editableField.text(this.oRenamePlugin._$oEditableControlDomRef.text());
+				var $Event = jQuery.Event("keydown");
+				$Event.keyCode = jQuery.sap.KeyCodes.ENTER;
+				this.oRenamePlugin._$editableField.trigger($Event);
+				sap.ui.getCore().applyChanges();
+				assert.ok(this.oLabelOverlay.getParent().$()[0].className.indexOf("sapUiDtOverlayWithScrollBarHorizontal") === -1, "then the ScrollBar Horizontal Style Class was not set");
+				fnDone();
+			}
+		}, this);
 		this.oRenamePlugin.startEdit(this.oLayoutOverlay);
-		this.oRenamePlugin._$oEditableControlDomRef.text("123456789012345678901234567890123456789012345678901234567890");
-		this.oRenamePlugin._$editableField.text(this.oRenamePlugin._$oEditableControlDomRef.text());
-		var $Event = jQuery.Event("keydown");
-		$Event.keyCode = jQuery.sap.KeyCodes.ENTER;
-		this.oRenamePlugin._$editableField.trigger($Event);
-		sap.ui.getCore().applyChanges();
-		assert.ok(this.oLabelOverlay.getParent().$()[0].className.indexOf("sapUiDtOverlayWithScrollBarHorizontal") === -1, "then the ScrollBar Horizontal Style Class was not set");
+	});
+
+	QUnit.test("when the title is not on the currently visible viewport and gets renamed", function(assert) {
+		var $button = this.oButton.$();
+		var $label = this.oLabel.$();
+		$label.css("margin-bottom", document.documentElement.clientHeight);
+		$button.get(0).scrollIntoView();
+		var oScrollSpy = sinon.spy($label.get(0), "scrollIntoView");
+
+		var fnDone = assert.async();
+		sap.ui.getCore().getEventBus().subscribeOnce('sap.ui.rta', 'plugin.Rename.startEdit', function (sChannel, sEvent, mParams) {
+			if (mParams.overlay === this.oLayoutOverlay) {
+				assert.equal(oScrollSpy.callCount, 1, "then the Label got scrolled");
+				$label.get(0).scrollIntoView.restore();
+				fnDone();
+			}
+		}, this);
+		this.oRenamePlugin.startEdit(this.oLayoutOverlay);
 	});
 
 	QUnit.test("when the Label gets modified with DELETE key", function(assert) {
-		var done = assert.async();
+		var fnDone = assert.async();
+		sap.ui.getCore().getEventBus().subscribeOnce('sap.ui.rta', 'plugin.Rename.startEdit', function (sChannel, sEvent, mParams) {
+			if (mParams.overlay === this.oLayoutOverlay) {
+				//Register event on Overlay (e.g. simulation event registration in Remove plugin)
+				this.oLayoutOverlay.attachBrowserEvent("keydown", function () {
+					throw new Error('This event should not be called!');
+				});
 
+				//Fire Keydown keyboard event on created by Rename plugin editable DOM-node.
+				var $Event = jQuery.Event("keydown");
+				$Event.keyCode = jQuery.sap.KeyCodes.DELETE;
+				this.oRenamePlugin._$editableField.trigger($Event);
+
+				//Waiting if any listeners above the field will throw an Error
+				setTimeout(function () {
+					assert.ok(true, "Delete test successful");
+					fnDone();
+				}, 50);
+
+				this.oRenamePlugin._stopEdit(this.oLayoutOverlay);
+			}
+		}, this);
 		this.oRenamePlugin.startEdit(this.oLayoutOverlay);
-
-		//Register event on Overlay (e.g. simulation event registration in Remove plugin)
-		this.oLayoutOverlay.attachBrowserEvent("keydown", function () {
-			throw new Error('This event should not be called!');
-		});
-
-		//Fire Keydown keyboard event on created by Rename plugin editable DOM-node.
-		var $Event = jQuery.Event("keydown");
-		$Event.keyCode = jQuery.sap.KeyCodes.DELETE;
-		this.oRenamePlugin._$editableField.trigger($Event);
-
-		//Waiting if any listeners above the field will throw an Error
-		setTimeout(function () {
-			assert.ok(true, "Delete test successful");
-			done();
-		}, 50);
-
-		this.oRenamePlugin._stopEdit(this.oLayoutOverlay);
 	});
-
 
 
 	QUnit.module("Given a Rename plugin...", {
@@ -266,5 +316,4 @@ sap.ui.define([ "sap/ui/layout/VerticalLayout",
 
 		assert.strictEqual(this.oRenamePlugin._getCurrentEditableFieldText(), "\xa0", "then the empty string is replaced by a non-breaking space");
 	});
-
 });

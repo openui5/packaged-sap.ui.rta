@@ -10,7 +10,11 @@ sap.ui.define([
 	'sap/ui/rta/Utils',
 	'sap/ui/fl/Utils'
 ],
-function(Plugin, Utils, FlexUtils) {
+function(
+	Plugin,
+	Utils,
+	FlexUtils
+){
 	"use strict";
 
 	/**
@@ -21,7 +25,7 @@ function(Plugin, Utils, FlexUtils) {
 	 * @class The Selection plugin allows you to select or focus overlays with mouse or keyboard and navigate to others.
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.50.1
+	 * @version 1.50.3
 	 * @constructor
 	 * @private
 	 * @since 1.34
@@ -191,13 +195,20 @@ function(Plugin, Utils, FlexUtils) {
 	 * @private
 	 */
 	Selection.prototype._onMouseDown = function(oEvent) {
+		// set focus after clicking, needed only for internet explorer
 		if (sap.ui.Device.browser.name == "ie"){
+			// when the EasyAdd Button is clicked, we don't want to focus/stopPropagation.
+			// but when the OverlayScrollContainer is the target, we want it to behave like a click on an overlay
+			var oTarget = sap.ui.getCore().byId(oEvent.target.id);
+			var bTargetIsScrollContainer = oEvent.target.className === "sapUiDtOverlayScrollContainer";
 			var oOverlay = sap.ui.getCore().byId(oEvent.currentTarget.id);
-			if (oOverlay.getSelectable()){
-				oOverlay.focus();
-				oEvent.stopPropagation();
-			} else {
-				oOverlay.getDomRef().blur();
+			if ((bTargetIsScrollContainer || oTarget instanceof sap.ui.dt.Overlay) && oOverlay instanceof sap.ui.dt.Overlay) {
+				if (oOverlay.getSelectable()){
+					oOverlay.focus();
+					oEvent.stopPropagation();
+				} else {
+					oOverlay.getDomRef().blur();
+				}
 			}
 		}
 	};
@@ -235,16 +246,18 @@ function(Plugin, Utils, FlexUtils) {
 			return;
 		}
 
-		//shared relevant container?
 		var bMultiSelectisValid = _hasSharedMultiSelectionPlugins(aSelections, this.getMultiSelectionRequiredPlugins())
-			&& _hasSharedRelevantContainer(aSelections);
+			&& _hasSharedRelevantContainer(aSelections)
+			&& (_hasSameParent(aSelections, oCurrentSelectedOverlay)
+				|| _isOfSameType(aSelections, oCurrentSelectedOverlay));
+
 		oCurrentSelectedOverlay.setSelected(bMultiSelectisValid);
 	};
 
 	function _hasSharedMultiSelectionPlugins(aSelections, aMultiSelectionRequiredPlugins){
 		var aSharedMultiSelectionPlugins = aMultiSelectionRequiredPlugins;
-		aSelections.forEach(function(oSelecedOverlay) {
-			var aEditableByPlugins = oSelecedOverlay.getEditableByPlugins();
+		aSelections.forEach(function(oSelectedOverlay) {
+			var aEditableByPlugins = oSelectedOverlay.getEditableByPlugins();
 			aSharedMultiSelectionPlugins = aSharedMultiSelectionPlugins.reduce(function(aSharedPlugins, sPluginName){
 				if (aEditableByPlugins.indexOf(sPluginName) !== -1){
 					aSharedPlugins.push(sPluginName);
@@ -263,6 +276,20 @@ function(Plugin, Utils, FlexUtils) {
 		var oPreviousRelevantContainer = oPreviousSelectedOverlay.getRelevantContainer();
 
 		return oCurrentRelevantContainer === oPreviousRelevantContainer;
+	}
+
+	function _hasSameParent(aSelections, oSelectedOverlay){
+		return !aSelections.some(function(oSelection){
+			return oSelection.getParentElementOverlay() !== oSelectedOverlay.getParentElementOverlay();
+		});
+	}
+
+	function _isOfSameType(aSelections, oSelectedOverlay){
+		var sSelectedOverlayElementName = oSelectedOverlay.getElementInstance().getMetadata().getName();
+		return !aSelections.some(function(oSelection){
+			var sCurrentSelectionElementName = oSelection.getElementInstance().getMetadata().getName();
+			return (sCurrentSelectionElementName !== sSelectedOverlayElementName);
+		});
 	}
 
 	return Selection;
