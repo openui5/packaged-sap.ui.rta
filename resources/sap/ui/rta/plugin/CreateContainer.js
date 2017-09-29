@@ -22,7 +22,7 @@ sap.ui.define([
 	 * @class The CreateContainer allows trigger CreateContainer operations on the overlay
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.50.0
+	 * @version 1.50.1
 	 * @constructor
 	 * @private
 	 * @since 1.34
@@ -118,7 +118,14 @@ sap.ui.define([
 		}
 	};
 
-	CreateContainer.prototype._getCreatedContainerId = function(vAction, sNewControlID) {
+	/**
+	 * Returns the overlay of a newly created container using the function
+	 * defined in the control designtime metadata to retrieve the correct id
+	 * @param  {object} vAction       create container action from designtime metadata
+	 * @param  {string} sNewControlID id of the new control
+	 * @return {sap.ui.dt.Overlay}    overlay for the new container
+	 */
+	CreateContainer.prototype.getCreatedContainerOverlay = function(vAction, sNewControlID) {
 		var sId = sNewControlID;
 		if (vAction.getCreatedContainerId && typeof vAction.getCreatedContainerId === "function") {
 			var fnMapToRelevantControlID = vAction.getCreatedContainerId;
@@ -179,13 +186,10 @@ sap.ui.define([
 		}, oDesignTimeMetadata);
 
 		this.fireElementModified({
-			"command" : oCommand
+			"command" : oCommand,
+			"action" : vAction,
+			"newControlId" : sNewControlID
 		});
-
-		var oNewContainerOverlay  = this._getCreatedContainerId(vAction, sNewControlID);
-		oNewContainerOverlay.setSelected(true);
-
-		return oNewContainerOverlay;
 	};
 
 	return CreateContainer;

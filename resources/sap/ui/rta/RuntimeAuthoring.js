@@ -46,7 +46,8 @@ sap.ui.define([
 		"sap/ui/core/BusyIndicator",
 		"sap/ui/dt/DOMUtil",
 		"sap/ui/rta/util/StylesLoader",
-		"sap/ui/rta/appVariant/ManageAppsLoader"
+		"sap/ui/rta/appVariant/ManageAppsLoader",
+		"sap/ui/Device"
 	],
 	function(
 		jQuery,
@@ -89,7 +90,8 @@ sap.ui.define([
 		BusyIndicator,
 		DOMUtil,
 		StylesLoader,
-		ManageAppsLoader
+		ManageAppsLoader,
+		Device
 	) {
 	"use strict";
 
@@ -101,7 +103,7 @@ sap.ui.define([
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.50.0
+	 * @version 1.50.1
 	 * @constructor
 	 * @private
 	 * @since 1.30
@@ -698,18 +700,38 @@ sap.ui.define([
 	// ---- backward compatibility API
 
 	RuntimeAuthoring.prototype._onKeyDown = function(oEvent) {
-		// on macintosh os cmd-key is used instead of ctrl-key
-		var bCtrlKey = sap.ui.Device.os.macintosh ? oEvent.metaKey : oEvent.ctrlKey;
-		if ((oEvent.keyCode === jQuery.sap.KeyCodes.Z) && (oEvent.shiftKey === false) && (oEvent.altKey === false) && (bCtrlKey === true)) {
-			// CTRL+Z
-			this._onUndo()
+		// if for example the addField Dialog/transport/reset Popup is open, we don't want the user to be able to undo/redo
+		var bMacintosh = Device.os.macintosh;
+		var bFocusInsideOverlayContainer = Overlay.getOverlayContainer().contains(document.activeElement);
+		var bFocusInsideRtaToolbar = this._oToolsMenu.getDomRef().contains(document.activeElement);
+		var bFocusOnBody = document.body === document.activeElement;
+		var bFocusInsideRenameField = jQuery(document.activeElement).parents('.sapUiRtaEditableField').length > 0;
 
-			.then(oEvent.stopPropagation.bind(oEvent));
-		} else if ((oEvent.keyCode === jQuery.sap.KeyCodes.Y) && (oEvent.shiftKey === false) && (oEvent.altKey === false) && (bCtrlKey === true)) {
-			// CTRL+Y
-			this._onRedo()
-
-			.then(oEvent.stopPropagation.bind(oEvent));
+		if ((bFocusInsideOverlayContainer || bFocusInsideRtaToolbar || bFocusOnBody) && !bFocusInsideRenameField) {
+			// OSX: replace CTRL with CMD
+			var bCtrlKey = bMacintosh ? oEvent.metaKey : oEvent.ctrlKey;
+			if (
+				oEvent.keyCode === jQuery.sap.KeyCodes.Z
+				&& oEvent.shiftKey === false
+				&& oEvent.altKey === false
+				&& bCtrlKey === true
+			) {
+				this._onUndo().then(oEvent.stopPropagation.bind(oEvent));
+			} else if (
+				(( // OSX: CMD+SHIFT+Z
+					bMacintosh
+					&& oEvent.keyCode === jQuery.sap.KeyCodes.Z
+					&& oEvent.shiftKey === true
+				) || ( // Others: CTRL+Y
+					!bMacintosh
+					&& oEvent.keyCode === jQuery.sap.KeyCodes.Y
+					&& oEvent.shiftKey === false
+				))
+				&& oEvent.altKey === false
+				&& bCtrlKey === true
+			) {
+				this._onRedo().then(oEvent.stopPropagation.bind(oEvent));
+			}
 		}
 	};
 
@@ -937,7 +959,16 @@ sap.ui.define([
 		var oTransportSelection = new TransportSelection();
 		var sCurrentLayer = this.getLayer();
 
+		// all new changes from commands that are only in our stack and not yet in the LREP, filtered by them having a change
+		var aUnsavedChanges = this.getCommandStack().getAllExecutedCommands().reduce(function(aChanges, oCommand) {
+			if (oCommand.getPreparedChange) {
+				aChanges.push(oCommand.getPreparedChange());
+			}
+			return aChanges;
+		}, []);
+
 		this._getFlexController().getComponentChanges({currentLayer: sCurrentLayer}).then(function(aChanges) {
+			aChanges = aChanges.concat(aUnsavedChanges);
 			return FlexSettings.getInstance(FlexUtils.getComponentClassName(this._oRootControl)).then(function(oSettings) {
 				if (!oSettings.isProductiveSystem() && !oSettings.hasMergeErrorOccured()) {
 					return oTransportSelection.setTransports(aChanges, this._oRootControl);
@@ -1032,9 +1063,9 @@ sap.ui.define([
 
 		var fnConfirmDiscardAllChanges = function (sAction) {
 			if (sAction === "OK") {
-				this.getCommandStack().removeAllCommands();
 				RuntimeAuthoring.enableRestart(this.getLayer());
 				this._deleteChanges();
+				this.getCommandStack().removeAllCommands();
 			}
 		}.bind(this);
 
@@ -1112,6 +1143,32 @@ sap.ui.define([
 	};
 
 	/**
+	 * Function to automatically start the rename plugin on a container when it gets created
+	 * @param {object} vAction       The create action from designtime metadata
+	 * @param {string} sNewControlID The id of the newly created container
+	 */
+	RuntimeAuthoring.prototype._setRenameOnCreatedContainer = function(vAction, sNewControlID) {
+		var oNewContainerOverlay = this.getPlugins()["createContainer"].getCreatedContainerOverlay(vAction, sNewControlID);
+		if (oNewContainerOverlay) {
+			oNewContainerOverlay.setSelected(true);
+
+			if (this.getPlugins()["rename"]) {
+				var oDelegate = {
+					"onAfterRendering" : function() {
+						// TODO : remove timeout
+						setTimeout(function() {
+							this.getPlugins()["rename"].startEdit(oNewContainerOverlay);
+						}.bind(this), 0);
+						oNewContainerOverlay.removeEventDelegate(oDelegate);
+					}.bind(this)
+				};
+
+				oNewContainerOverlay.addEventDelegate(oDelegate);
+			}
+		}
+	};
+
+	/**
 	 * Function to handle modification of an element
 	 *
 	 * @param {sap.ui.base.Event} oEvent Event object
@@ -1121,9 +1178,16 @@ sap.ui.define([
 	RuntimeAuthoring.prototype._handleElementModified = function(oEvent) {
 		this._handleStopCutPaste();
 
+		var vAction = oEvent.getParameter("action");
+		var sNewControlID = oEvent.getParameter("newControlId");
+
 		var oCommand = oEvent.getParameter("command");
 		if (oCommand instanceof sap.ui.rta.command.BaseCommand) {
-			return this.getCommandStack().pushAndExecute(oCommand);
+			return this.getCommandStack().pushAndExecute(oCommand).then(function(){
+				if (vAction && sNewControlID){
+					this._setRenameOnCreatedContainer(vAction, sNewControlID);
+				}
+			}.bind(this));
 		}
 		return Promise.resolve();
 	};
@@ -1345,23 +1409,7 @@ sap.ui.define([
 		this._handleStopCutPaste();
 
 		var oOverlay = aOverlays[0];
-		var oNewContainerOverlay = this.getPlugins()["createContainer"].handleCreate(bSibling, oOverlay);
-
-		if (this.getPlugins()["rename"]) {
-
-			var oDelegate = {
-				"onAfterRendering" : function() {
-					// TODO : remove timeout
-					setTimeout(function() {
-						this.getPlugins()["rename"].startEdit(oNewContainerOverlay);
-					}.bind(this), 0);
-					oNewContainerOverlay.removeEventDelegate(oDelegate);
-				}.bind(this)
-			};
-
-			oNewContainerOverlay.addEventDelegate(oDelegate);
-		}
-
+		this.getPlugins()["createContainer"].handleCreate(bSibling, oOverlay);
 	};
 
 	/**
