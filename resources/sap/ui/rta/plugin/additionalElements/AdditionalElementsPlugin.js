@@ -134,7 +134,7 @@ sap.ui.define([
 	 * @class The plugin allows to add additional elements that exist either hidden in the UI or in the OData service
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.50.3
+	 * @version 1.50.4
 	 * @constructor
 	 * @private
 	 * @since 1.44
@@ -507,10 +507,17 @@ sap.ui.define([
 
 		_createMoveCommandForInvisible: function(oSelectedElement, mActions, mParents, oSiblingElement, iIndex) {
 			var oRevealedElement = oSelectedElement.element;
+			var oRevealedElementOverlay = OverlayRegistry.getOverlay(oRevealedElement);
 			var sType = oRevealedElement.getMetadata().getName();
-			var mType = mActions.reveal.types[sType];
-			var sParentAggregationName = mType.action.getAggregationName(mParents.parent, oRevealedElement);
-			var oSourceParent = _getSourceParent(oRevealedElement, mParents);
+			var sParentAggregationName;
+			if (oRevealedElementOverlay) {
+				sParentAggregationName = oRevealedElementOverlay.getParentAggregationOverlay().getAggregationName();
+			} else {
+				// stashed control is not in DOM tree and therefore has no overlay
+				var mType = mActions.reveal.types[sType];
+				sParentAggregationName = mType.action.getAggregationName(mParents.parent, oRevealedElement);
+			}
+			var oSourceParent = _getSourceParent(oRevealedElement, mParents, oRevealedElementOverlay);
 			var oTargetParent = mParents.parent;
 			var iRevealTargetIndex = Utils.getIndex(mParents.parent, oSiblingElement, sParentAggregationName);
 			var iRevealedSourceIndex = Utils.getIndex(oSourceParent, oRevealedElement, sParentAggregationName) - 1;
@@ -601,8 +608,11 @@ sap.ui.define([
 		});
 	}
 
-	function _getSourceParent(oRevealedElement, mParents){
-		var oParent = oRevealedElement.getParent();
+	function _getSourceParent(oRevealedElement, mParents, oRevealedElementOverlay){
+		var oParent;
+		if (oRevealedElementOverlay) {
+			oParent = oRevealedElementOverlay.getParentElementOverlay().getElementInstance();
+		}
 		if (!oParent && oRevealedElement.sParentId){
 			//stashed control has no parent, but remembers its parent id
 			oParent = sap.ui.getCore().byId(oRevealedElement.sParentId);
