@@ -18,7 +18,7 @@ sap.ui.define([
 	 * @class The EasyRemove Plugin adds an Icon to an Overlay, which allows to trigger remove operations directly
 	 * @extends sap.ui.rta.plugin.Remove
 	 * @author SAP SE
-	 * @version 1.50.4
+	 * @version 1.50.5
 	 * @constructor
 	 * @private
 	 * @since 1.48

@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.50.4
+	 * @version 1.50.5
 	 * @constructor
 	 * @private
 	 * @since 1.46

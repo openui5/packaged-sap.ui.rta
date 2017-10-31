@@ -15,7 +15,7 @@ sap.ui.define(['sap/ui/rta/command/BaseCommand', "sap/ui/fl/FlexControllerFactor
 	 * @extends sap.ui.rta.command.BaseCommand
 	 *
 	 * @author SAP SE
-	 * @version 1.50.4
+	 * @version 1.50.5
 	 *
 	 * @constructor
 	 * @private

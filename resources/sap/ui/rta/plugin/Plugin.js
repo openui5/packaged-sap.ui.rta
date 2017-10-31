@@ -23,7 +23,7 @@ function(Plugin, FlexUtils, ChangeRegistry) {
 	 * @extends sap.ui.dt.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.50.4
+	 * @version 1.50.5
 	 *
 	 * @constructor
 	 * @private

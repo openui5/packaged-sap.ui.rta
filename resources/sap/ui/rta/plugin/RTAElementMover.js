@@ -39,7 +39,7 @@ function(
 	 * The RTAElementMover is responsible for the RTA specific adaptation of element movements.
 	 *
 	 * @author SAP SE
-	 * @version 1.50.4
+	 * @version 1.50.5
 	 *
 	 * @constructor
 	 * @private

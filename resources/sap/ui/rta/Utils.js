@@ -27,7 +27,7 @@ function(
 	 * @class Utility functionality to work with controls, e.g. iterate through aggregations, find parents, etc.
 	 *
 	 * @author SAP SE
-	 * @version 1.50.4
+	 * @version 1.50.5
 	 *
 	 * @private
 	 * @static
@@ -230,6 +230,7 @@ function(
 					oFragmentDialog = sap.ui.xmlfragment("sap.ui.rta.view.RemoveElementDialog", oFragmentController);
 					oFragmentDialog.setModel(oModel);
 				}
+				oFragmentDialog.addStyleClass(Utils.getRtaStyleClassName());
 				oFragmentDialog.open();
 			}
 		);
