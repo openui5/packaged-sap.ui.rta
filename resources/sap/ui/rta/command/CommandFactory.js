@@ -200,11 +200,12 @@ sap.ui.define(['sap/ui/base/ManagedObject', 'sap/ui/dt/ElementUtil', 'sap/ui/dt/
 			bSuccessfullConfigured = fnConfigureActionCommand(vElement, oCommand, oAction);
 		}
 
-		if (bSuccessfullConfigured){
-			oCommand.prepare(mFlexSettings, sVariantManagementReference);
+		var bPrepareStatus = bSuccessfullConfigured && oCommand.prepare(mFlexSettings, sVariantManagementReference);
+		if (bPrepareStatus) {
 			return oCommand;
 		} else {
 			oCommand.destroy();
+			return undefined;
 		}
 	};
 
@@ -215,7 +216,7 @@ sap.ui.define(['sap/ui/base/ManagedObject', 'sap/ui/dt/ElementUtil', 'sap/ui/dt/
 	 * @extends sap.ui.base.ManagedObject
 	 *
 	 * @author SAP SE
-	 * @version 1.52.0
+	 * @version 1.52.1
 	 *
 	 * @constructor
 	 * @private

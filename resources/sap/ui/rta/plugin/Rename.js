@@ -13,8 +13,7 @@ sap.ui.define([
 	'sap/ui/dt/ElementUtil',
 	'sap/ui/dt/OverlayUtil',
 	'sap/ui/dt/OverlayRegistry',
-	'sap/ui/rta/Utils',
-	'sap/ui/dt/DOMUtil'
+	'sap/ui/rta/Utils'
 ], function(
 	jQuery,
 	Plugin,
@@ -23,8 +22,7 @@ sap.ui.define([
 	ElementUtil,
 	OverlayUtil,
 	OverlayRegistry,
-	Utils,
-	DOMUtil
+	Utils
 ) {
 	"use strict";
 
@@ -38,10 +36,10 @@ sap.ui.define([
 	 *
 	 * @class The Rename allows to create a set of Overlays above the root elements and their public children and manage
 	 *        their events.
-	 * @extends sap.ui.rta.plugin.RenameHandler
+	 * @extends sap.ui.rta.plugin.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.52.0
+	 * @version 1.52.1
 	 *
 	 * @constructor
 	 * @private

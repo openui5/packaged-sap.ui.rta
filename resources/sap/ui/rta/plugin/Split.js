@@ -26,7 +26,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.52.0
+	 * @version 1.52.1
 	 * @constructor
 	 * @private
 	 * @since 1.46
@@ -166,11 +166,12 @@ sap.ui.define([
 	/**
 	 * Trigger the plugin execution.
 	 * @param  {sap.ui.dt.ElementOverlay[]} aOverlays Selected overlays; targets of the action
+	 * @param  {any} oEventItem ContextMenu item which triggers the event
+	 * @param  {any} oContextElement Element where the action is triggered
 	 */
-	Split.prototype.handler = function(aOverlays){
+	Split.prototype.handler = function(aOverlays, mPropertyBag){
 		//TODO: Handle "Stop Cut & Paste" depending on alignment with Dietrich!
-		var oSelectedElement = aOverlays[0].getElementInstance();
-		this.handleSplit(oSelectedElement);
+		this.handleSplit(mPropertyBag.contextElement);
 	};
 
 	return Split;

@@ -163,34 +163,30 @@
 .sapUiRtaRoot .sapUiRtaPaddingTop {
   padding-top: 40px;
 }
-.sapUiRta.sapUiRtaPersonalize .sapUiRtaPersDelete .sapUiRtaPersDeleteClick {
-  text-align: center;
-  vertical-align: middle;
-  height: 1.5rem;
-  width: 1.5rem;
-  position: absolute;
+.sapUiRta.sapUiRtaPersonalize .sapUiRtaPersDelete .sapUiRtaPersDeleteClick .sapUiRtaPersDeleteIconOuter .sapMBtn {
   top: 10px;
   right: 10px;
-  z-index: 1;
+  position: absolute;
+  height: 1.5rem;
+  padding: 0;
 }
-.sapUiRta.sapUiRtaPersonalize .sapUiRtaPersDelete .sapUiRtaPersDeleteClick .sapUiRtaPersDeleteIconOuter {
-  display: inline-block;
-  box-sizing: border-box;
-  text-align: center;
+.sapUiRta.sapUiRtaPersonalize .sapUiRtaPersDelete .sapUiRtaPersDeleteClick .sapUiRtaPersDeleteIconOuter .sapMBtn .sapMBtnInner {
   border-radius: 50%;
-  border: 0.125rem solid #ffffff;
-  cursor: pointer;
-  z-index: 1;
-  opacity: 1;
   width: 1.5rem;
   height: 1.5rem;
+  min-width: unset;
   background-color: #2e9cea;
   box-shadow: 0px 0px 4px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  border: 0.125rem solid #ffffff;
 }
-.sapUiRta.sapUiRtaPersonalize .sapUiRtaPersDelete .sapUiRtaPersDeleteClick .sapUiRtaPersDeleteIconOuter .sapUiIcon {
+.sapUiRta.sapUiRtaPersonalize .sapUiRtaPersDelete .sapUiRtaPersDeleteClick .sapUiRtaPersDeleteIconOuter .sapMBtn .sapMBtnInner .sapUiIcon {
   color: #ffffff;
   font-size: 0.69rem;
   line-height: 1.25rem;
+  width: 1.35rem;
+  text-shadow: none;
+  margin: 0;
 }
 .sapUiRta.sapUiRtaPersonalize .sapUiRtaPersDelete.sapUiRtaOverlayPlaceholder .sapUiRtaPersDeleteClick {
   display: none;

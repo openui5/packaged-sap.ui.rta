@@ -101,7 +101,7 @@ sap.ui.define([
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.52.0
+	 * @version 1.52.1
 	 * @constructor
 	 * @private
 	 * @since 1.30
@@ -546,7 +546,7 @@ sap.ui.define([
 
 	RuntimeAuthoring.prototype._getPublishAndAppVariantSupportVisibility = function() {
 		return FlexSettings.getInstance().then(function(oSettings) {
-			return RtaAppVariantFeature.isPlatFormEnabled(this.getLayer(), oSettings.isAtoEnabled() && oSettings.isAtoAvailable(), this._oRootControl).then(function(bIsAppVariantSupported) {
+			return RtaAppVariantFeature.isPlatFormEnabled(this.getLayer(), this._oRootControl).then(function(bIsAppVariantSupported) {
 				return [!oSettings.isProductiveSystem() && !oSettings.hasMergeErrorOccured(), bIsAppVariantSupported];
 			});
 		}.bind(this))
@@ -952,6 +952,8 @@ sap.ui.define([
 		var aUnsavedChanges = this.getCommandStack().getAllExecutedCommands().reduce(function(aChanges, oCommand) {
 			if (oCommand.getPreparedChange) {
 				aChanges.push(oCommand.getPreparedChange());
+			} else if (oCommand.getVariantChange && oCommand.getVariantChange()) {
+				aChanges.push(oCommand.getVariantChange());
 			}
 			return aChanges;
 		}, []);

@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.BaseCommand
 	 * @author SAP SE
-	 * @version 1.52.0
+	 * @version 1.52.1
 	 * @constructor
 	 * @private
 	 * @since 1.52
@@ -31,9 +31,6 @@ sap.ui.define([
 				},
 				newVariantReference : {
 					type : "string"
-				},
-				duplicateVariant : {
-					type : "any"
 				}
 			},
 			associations : {},
@@ -48,6 +45,7 @@ sap.ui.define([
 	 */
 	ControlVariantDuplicate.prototype.prepare = function(mFlexSettings, sVariantManagementReference) {
 		this.sLayer = mFlexSettings.layer;
+		return true;
 	};
 
 	/**
@@ -76,9 +74,9 @@ sap.ui.define([
 				sourceVariantReference : sSourceVariantReference
 		};
 
-		return Promise.resolve(this.oModel._copyVariant(mPropertyBag))
+		return this.oModel._copyVariant(mPropertyBag)
 			.then(function(oVariant){
-				this.setDuplicateVariant(oVariant);
+				this._oVariantChange = oVariant;
 			}.bind(this));
 	};
 
@@ -87,10 +85,10 @@ sap.ui.define([
 	 * @returns {promise} Returns resolve after undo
 	 */
 	ControlVariantDuplicate.prototype.undo = function() {
-		if (this.getDuplicateVariant()) {
-			return Promise.resolve(this.oModel._removeVariant(this.getDuplicateVariant(), this.getSourceVariantReference(), this.sVariantManagementReference))
+		if (this._oVariantChange) {
+			return this.oModel._removeVariant(this._oVariantChange, this.getSourceVariantReference(), this.sVariantManagementReference)
 				.then(function() {
-					this.setDuplicateVariant(null);
+					this._oVariantChange = null;
 				}.bind(this));
 		}
 	};

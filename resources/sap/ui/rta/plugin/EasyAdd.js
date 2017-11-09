@@ -19,7 +19,7 @@ sap.ui.define([
 	 * @class The EasyAdd Plugin adds an Icon to an Overlay, which allows to trigger add operations directly
 	 * @extends sap.ui.rta.plugin.additionalElements.AdditionalElementsPlugin
 	 * @author SAP SE
-	 * @version 1.52.0
+	 * @version 1.52.1
 	 * @constructor
 	 * @private
 	 * @since 1.48
@@ -125,6 +125,12 @@ sap.ui.define([
 		}
 	};
 
+	/**
+	 * On Editable Change the enablement of the Button has to be adapted
+	 *
+	 * @param {sap.ui.dt.Overlay} oOverlay overlay object
+	 * @override
+	 */
 	EasyAdd.prototype._isEditable = function(oOverlay) {
 		var bIsEditable = AdditionalElementsPlugin.prototype._isEditable.apply(this, arguments);
 		if (oOverlay._oAddButton) {

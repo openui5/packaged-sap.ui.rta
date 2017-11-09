@@ -18,7 +18,7 @@ sap.ui.define(['sap/ui/rta/command/BaseCommand',
 	 * @extends sap.ui.rta.command.BaseCommand
 	 *
 	 * @author SAP SE
-	 * @version 1.52.0
+	 * @version 1.52.1
 	 *
 	 * @constructor
 	 * @private
@@ -61,6 +61,7 @@ sap.ui.define(['sap/ui/rta/command/BaseCommand',
 	 */
 	AppDescriptorCommand.prototype.prepare = function(mFlexSettings){
 		this.setLayer(mFlexSettings.layer);
+		return true;
 	};
 
 	/**
