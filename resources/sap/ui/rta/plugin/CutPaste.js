@@ -30,7 +30,7 @@ function(jQuery,
 	 * @extends sap.ui.dt.plugin.CutPaste
 	 *
 	 * @author SAP SE
-	 * @version 1.50.5
+	 * @version 1.50.6
 	 *
 	 * @constructor
 	 * @private
