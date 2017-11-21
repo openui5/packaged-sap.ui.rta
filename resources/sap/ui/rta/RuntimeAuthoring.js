@@ -101,7 +101,7 @@ sap.ui.define([
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.52.1
+	 * @version 1.52.2
 	 * @constructor
 	 * @private
 	 * @since 1.30
@@ -446,71 +446,71 @@ sap.ui.define([
 			//Check if the application has personalized changes and reload without them
 			return this._handlePersonalizationChangesOnStart()
 			.then(function(bReloadTriggered){
-				if (!bReloadTriggered) {
-					// Take default plugins if no plugins handed over
-					if (!this.getPlugins() || !Object.keys(this.getPlugins()).length) {
-						this.setPlugins(this.getDefaultPlugins());
-					}
-
-					// Destroy default plugins instantiated but not in use
-					this._destroyDefaultPlugins(this.getPlugins());
-
-					Object.keys(this.getPlugins()).forEach(function(sPluginName) {
-						if (this.getPlugins()[sPluginName].attachElementModified) {
-							this.getPlugins()[sPluginName].attachElementModified(this._handleElementModified, this);
-						}
-					}.bind(this));
-
-					// Hand over currrent command stack to settings plugin
-					if (this.getPlugins()["settings"]) {
-						this.getPlugins()["settings"].setCommandStack(this.getCommandStack());
-					}
-
-					this._oSerializer = new LREPSerializer({commandStack : this.getCommandStack(), rootControl : this.getRootControl()});
-
-					// Create design time
-					var aKeys = Object.keys(this.getPlugins());
-					var aPlugins = aKeys.map(function(sKey) {
-						return this.getPlugins()[sKey];
-					}, this);
-
-					jQuery.sap.measure.start("rta.dt.startup","Measurement of RTA: DesignTime start up");
-					this._oDesignTime = new DesignTime({
-						rootElements : [this._oRootControl],
-						plugins : aPlugins
-					});
-
-					jQuery(Overlay.getOverlayContainer()).addClass("sapUiRta");
-					if (this.getLayer() === "USER") {
-						jQuery(Overlay.getOverlayContainer()).addClass("sapUiRtaPersonalize");
-					}
-
-					this._oRootControl.addStyleClass("sapUiRtaRoot");
-
-					this._oDesignTime.attachSelectionChange(function(oEvent) {
-						this.fireSelectionChange({selection: oEvent.getParameter("selection")});
-					}, this);
-
-					this._oDesignTime.attachEventOnce("synced", function() {
-						this.fireStart({
-							editablePluginsCount: this.iEditableOverlaysCount
-						});
-						jQuery.sap.measure.end("rta.dt.startup","Measurement of RTA: DesignTime start up");
-					}, this);
-
-					this._oDesignTime.attachEventOnce("syncFailed", function() {
-						this.fireFailed();
-					}, this);
-
-					// Register function for checking unsaved before leaving RTA
-					this._oldUnloadHandler = window.onbeforeunload;
-					window.onbeforeunload = this._onUnload.bind(this);
+				if (bReloadTriggered) {
+					return Promise.reject(false);
 				}
 
-				return Promise.resolve(bReloadTriggered);
+				// Take default plugins if no plugins handed over
+				if (!this.getPlugins() || !Object.keys(this.getPlugins()).length) {
+					this.setPlugins(this.getDefaultPlugins());
+				}
+
+				// Destroy default plugins instantiated but not in use
+				this._destroyDefaultPlugins(this.getPlugins());
+
+				Object.keys(this.getPlugins()).forEach(function(sPluginName) {
+					if (this.getPlugins()[sPluginName].attachElementModified) {
+						this.getPlugins()[sPluginName].attachElementModified(this._handleElementModified, this);
+					}
+				}.bind(this));
+
+				// Hand over currrent command stack to settings plugin
+				if (this.getPlugins()["settings"]) {
+					this.getPlugins()["settings"].setCommandStack(this.getCommandStack());
+				}
+
+				this._oSerializer = new LREPSerializer({commandStack : this.getCommandStack(), rootControl : this.getRootControl()});
+
+				// Create design time
+				var aKeys = Object.keys(this.getPlugins());
+				var aPlugins = aKeys.map(function(sKey) {
+					return this.getPlugins()[sKey];
+				}, this);
+
+				jQuery.sap.measure.start("rta.dt.startup","Measurement of RTA: DesignTime start up");
+				this._oDesignTime = new DesignTime({
+					rootElements : [this._oRootControl],
+					plugins : aPlugins
+				});
+
+				jQuery(Overlay.getOverlayContainer()).addClass("sapUiRta");
+				if (this.getLayer() === "USER") {
+					jQuery(Overlay.getOverlayContainer()).addClass("sapUiRtaPersonalize");
+				}
+
+				this._oRootControl.addStyleClass("sapUiRtaRoot");
+
+				this._oDesignTime.attachSelectionChange(function(oEvent) {
+					this.fireSelectionChange({selection: oEvent.getParameter("selection")});
+				}, this);
+
+				this._oDesignTime.attachEventOnce("synced", function() {
+					this.fireStart({
+						editablePluginsCount: this.iEditableOverlaysCount
+					});
+					jQuery.sap.measure.end("rta.dt.startup","Measurement of RTA: DesignTime start up");
+				}, this);
+
+				this._oDesignTime.attachEventOnce("syncFailed", function() {
+					this.fireFailed();
+				}, this);
+
+				// Register function for checking unsaved before leaving RTA
+				this._oldUnloadHandler = window.onbeforeunload;
+				window.onbeforeunload = this._onUnload.bind(this);
 			}.bind(this))
-			.then(function (bReloadTriggered) {
-				if (this.getShowToolbars() && !bReloadTriggered) {
+			.then(function () {
+				if (this.getShowToolbars()) {
 					// Create ToolsMenu
 					return this._getPublishAndAppVariantSupportVisibility()
 						.then(function (aButtonsSupport) {
@@ -540,6 +540,11 @@ sap.ui.define([
 						var sStyles = sData.replace(/%scrollWidth%/g, DOMUtil.getScrollbarWidth() + 'px');
 						DOMUtil.insertStyles(sStyles);
 					});
+			})
+			.catch(function(vError) {
+				if (vError) {
+					return Promise.reject(vError);
+				}
 			});
 		}
 	};
@@ -815,7 +820,8 @@ sap.ui.define([
 	 */
 	RuntimeAuthoring.prototype.exit = function() {
 		jQuery.map(this._dependents, function (oDependent) {
-			oDependent.destroy();
+			//Destroy should be called with supress invalidate = true here to prevent static UI Area invalidation
+			oDependent.destroy(true);
 		});
 
 		if (this._oDesignTime) {

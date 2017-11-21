@@ -39,7 +39,7 @@ function(
 	 * The RTAElementMover is responsible for the RTA specific adaptation of element movements.
 	 *
 	 * @author SAP SE
-	 * @version 1.52.1
+	 * @version 1.52.2
 	 *
 	 * @constructor
 	 * @private
@@ -104,8 +104,7 @@ function(
 	function fnIsValidForMove(oOverlay, bOnRegistration) {
 		var bValid = false,
 			oDesignTimeMetadata = oOverlay.getDesignTimeMetadata(),
-			oParentElementOverlay = oOverlay.getParentElementOverlay(),
-			oChangeHandlerRelevantElement;
+			oParentElementOverlay = oOverlay.getParentElementOverlay();
 
 		if (!oDesignTimeMetadata || !oParentElementOverlay) {
 			return false;
@@ -117,12 +116,7 @@ function(
 			return false;
 		}
 
-		var oMoveAction = this._getMoveAction(oOverlay);
-		if (oMoveAction && oMoveAction.changeType) {
-			// moveChangeHandler information is always located on the relevant container
-			oChangeHandlerRelevantElement = oOverlay.getRelevantContainer();
-			bValid = this.oBasePlugin.hasChangeHandler(oMoveAction.changeType, oChangeHandlerRelevantElement);
-		}
+		bValid = this._isMoveAvailableOnRelevantContainer(oOverlay);
 
 		if (bValid) {
 			bValid = this.oBasePlugin.hasStableId(oOverlay) &&
@@ -143,8 +137,9 @@ function(
 			} else if (aValidAggregationOverlays.length === 1) {
 				var aVisibleOverlays = aValidAggregationOverlays[0].getChildren().filter(function(oChildOverlay) {
 					var oChildElement = oChildOverlay.getElementInstance();
-					//At least one sibling has to be visible and still attached to the parent
-					return (oChildElement.getVisible() && oChildElement.getParent());
+					// At least one sibling has to be visible and still attached to the parent
+					// In some edge cases, the child element is not available anymore (element already got destroyed)
+					return (oChildElement && oChildElement.getVisible() && oChildElement.getParent());
 				});
 				bValid = aVisibleOverlays.length > 1;
 			}
@@ -234,7 +229,7 @@ function(
 		if (oMovedOverlay.getParent().getElementInstance() !== oTargetElement) {
 			// check if binding context is the same
 			var aBindings = BindingsExtractor.getBindings(oMovedElement, oMovedElement.getModel());
-			if (Object.keys(aBindings).length > 0 && oTargetElement.getBindingContext()) {
+			if (Object.keys(aBindings).length > 0 && oMovedElement.getBindingContext() && oTargetElement.getBindingContext()) {
 				var sMovedElementBindingContext = Utils.getEntityTypeByPath(
 					oMovedElement.getModel(),
 					oMovedElement.getBindingContext().getPath()
@@ -251,6 +246,23 @@ function(
 
 		// check if movedOverlay is movable into the target aggregation
 		return fnHasMoveAction.call(this, oAggregationOverlay, oMovedElement, vTargetRelevantContainerAfterMove);
+	};
+
+	/**
+	 * Checks if move is available on relevantcontainer
+	 * @param  {sap.ui.dt.Overlay} oOverlay overlay object
+	 * @return {boolean} true if move available on relevantContainer
+	 */
+	RTAElementMover.prototype._isMoveAvailableOnRelevantContainer = function(oOverlay) {
+		var oChangeHandlerRelevantElement,
+			oMoveAction = this._getMoveAction(oOverlay);
+
+		if (oMoveAction && oMoveAction.changeType) {
+			// moveChangeHandler information is always located on the relevant container
+			oChangeHandlerRelevantElement = oOverlay.getRelevantContainer();
+			return this.oBasePlugin.hasChangeHandler(oMoveAction.changeType, oChangeHandlerRelevantElement);
+		}
+		return false;
 	};
 
 	/**

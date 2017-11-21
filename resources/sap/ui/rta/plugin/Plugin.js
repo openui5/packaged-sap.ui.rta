@@ -35,7 +35,7 @@ function(
 	 * @extends sap.ui.dt.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.52.1
+	 * @version 1.52.2
 	 *
 	 * @constructor
 	 * @private
@@ -85,6 +85,8 @@ function(
 		if ((oParams.type === "propertyChanged" && oParams.name === "visible")) {
 			aRelevantOverlays = this._getRelevantOverlays(oOverlay);
 			this.evaluateEditable(aRelevantOverlays, {onRegistration: false});
+		} else if (oParams.type === "overlayRendered") {
+			this.evaluateEditable([oOverlay], {onRegistration: true});
 		} else if (oParams.type === "insertAggregation" || oParams.type === "removeAggregation") {
 			aRelevantOverlays = this._getRelevantOverlays(oOverlay, oParams.name);
 			this.evaluateEditable(aRelevantOverlays, {onRegistration: false});

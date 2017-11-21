@@ -34,7 +34,7 @@ function(
 	 * @extends sap.ui.dt.plugin.CutPaste
 	 *
 	 * @author SAP SE
-	 * @version 1.52.1
+	 * @version 1.52.2
 	 *
 	 * @constructor
 	 * @private
@@ -83,7 +83,15 @@ function(
 	 * @override
 	 */
 	CutPaste.prototype._isEditable = function(oOverlay, mPropertyBag) {
-		return this.getElementMover().isEditable(oOverlay, mPropertyBag.onRegistration);
+		return this.getElementMover().isEditable(oOverlay, mPropertyBag.onRegistration) || this._isPasteEditable(oOverlay);
+	};
+
+	CutPaste.prototype._isPasteEditable = function (oOverlay) {
+		var	oDesignTimeMetadata = oOverlay.getDesignTimeMetadata();
+
+		return this.hasStableId(oOverlay) &&
+			this.getElementMover()._isMoveAvailableOnRelevantContainer(oOverlay) &&
+			oDesignTimeMetadata.isActionAvailableOnAggregations("move");
 	};
 
 	/**
@@ -136,10 +144,8 @@ function(
 	 * @return {object[]}          Returns array containing the items with required data
 	 */
 	CutPaste.prototype.getMenuItems = function(oOverlay){
-		var aMenuItems = [];
-
-		if (this.isAvailable(oOverlay)){
-			aMenuItems.push({
+		var aMenuItems = [],
+			oCutMenuItem = {
 				id: 'CTX_CUT',
 				text: sap.ui.getCore().getLibraryResourceBundle('sap.ui.rta').getText('CTX_CUT'),
 				handler: function(aOverlays){
@@ -149,9 +155,8 @@ function(
 					return this.getDesignTime().getSelection().length === 1;
 				}.bind(this),
 				rank: 70
-			});
-
-			aMenuItems.push({
+			},
+			oPasteMenuItem = {
 				id: 'CTX_PASTE',
 				text: sap.ui.getCore().getLibraryResourceBundle('sap.ui.rta').getText('CTX_PASTE'),
 				handler: function(aOverlays){
@@ -161,7 +166,12 @@ function(
 					return this.isElementPasteable(oOverlay);
 				}.bind(this),
 				rank: 80
-			});
+			};
+
+		if (this.isAvailable(oOverlay)){
+			aMenuItems.push(oCutMenuItem, oPasteMenuItem);
+		} else if (this._isPasteEditable(oOverlay)) {
+			aMenuItems.push(oPasteMenuItem);
 		}
 
 		return aMenuItems;
