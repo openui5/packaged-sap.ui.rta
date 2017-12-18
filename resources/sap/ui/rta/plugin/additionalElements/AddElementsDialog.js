@@ -58,7 +58,7 @@ sap.ui.define([
 	 * @class Context - Dialog for available Fields in Runtime Authoring
 	 * @extends sap.ui.core.Control
 	 * @author SAP SE
-	 * @version 1.52.2
+	 * @version 1.52.3
 	 * @constructor
 	 * @private
 	 * @since 1.44
