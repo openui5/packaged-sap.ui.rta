@@ -1,6 +1,6 @@
 /*!
  * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2017 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -35,7 +35,7 @@ function(
 	 * @extends sap.ui.dt.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.52.3
+	 * @version 1.52.4
 	 *
 	 * @constructor
 	 * @private
@@ -128,12 +128,27 @@ function(
 	 * @param {object} mPropertyBag Map of additional information to be passed to isEditable
 	 */
 	BasePlugin.prototype.evaluateEditable = function(aOverlays, mPropertyBag) {
-		aOverlays.forEach(function(oOverlay) {
-			// when a control gets destroyed it gets deregistered before it gets removed from the parent aggregation.
-			// this means that getElementInstance is undefined when we get here via removeAggregation mutation
-			// when an overlay is not registered yet, we should not evaluate editable. In this case getDesignTimeMetadata returns null.
-			var vEditable = oOverlay.getElementInstance() && oOverlay.getDesignTimeMetadata() && this._isEditable(oOverlay, mPropertyBag);
+		var fnCheckBinding = function(oOverlay, sAggregationName){
+			if (sAggregationName && oOverlay.getElementInstance().getBinding(sAggregationName)) {
+				return false;
+			}
+			return oOverlay.isRoot() || fnCheckBinding(
+				oOverlay.getParentElementOverlay(),
+				oOverlay.getElementInstance().sParentAggregationName
+			);
+		};
 
+		var vEditable;
+		aOverlays.forEach(function(oOverlay) {
+			//check aggregation Binding recursively
+			if (oOverlay.getElementInstance() && !fnCheckBinding(oOverlay, oOverlay.getElementInstance().sParentAggregationName)) {
+				vEditable = false;
+			} else {
+				// when a control gets destroyed it gets deregistered before it gets removed from the parent aggregation.
+				// this means that getElementInstance is undefined when we get here via removeAggregation mutation
+				// when an overlay is not registered yet, we should not evaluate editable. In this case getDesignTimeMetadata returns null.
+				vEditable = oOverlay.getElementInstance() && oOverlay.getDesignTimeMetadata() && this._isEditable(oOverlay, mPropertyBag);
+			}
 			// for the createContainer and additionalElements plugin the isEditable function returns an object with 2 properties, asChild and asSibling.
 			// for every other plugin isEditable should be a boolean.
 			if (vEditable !== undefined && vEditable !== null) {
