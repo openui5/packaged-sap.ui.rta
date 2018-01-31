@@ -1,6 +1,6 @@
 /*!
  * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2017 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -23,7 +23,7 @@ function(Plugin, FlexUtils, ChangeRegistry) {
 	 * @extends sap.ui.dt.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.50.8
+	 * @version 1.50.9
 	 *
 	 * @constructor
 	 * @private
@@ -63,8 +63,26 @@ function(Plugin, FlexUtils, ChangeRegistry) {
 		return aPluginList.indexOf(sPluginName) > -1;
 	};
 
+	BasePlugin.prototype._isEditableAggregation = function(oOverlay) {
+		var fnCheckBinding = function(oOverlay, sAggregationName){
+			if (sAggregationName && oOverlay.getElementInstance().getBinding(sAggregationName)) {
+				return false;
+			}
+			return oOverlay.isRoot() || fnCheckBinding(
+				oOverlay.getParentElementOverlay(),
+				oOverlay.getElementInstance().sParentAggregationName
+			);
+		};
+
+		if (oOverlay.getElementInstance() && !fnCheckBinding(oOverlay, oOverlay.getElementInstance().sParentAggregationName)) {
+			return false;
+		} else {
+			return true;
+		}
+	};
+
 	BasePlugin.prototype.registerElementOverlay = function(oOverlay) {
-		if (this._isEditable(oOverlay)) {
+		if (this._isEditable(oOverlay) && this._isEditableAggregation(oOverlay)) {
 			this.addToPluginsList(oOverlay);
 		}
 	};

@@ -1,6 +1,6 @@
 /*!
  * UI development toolkit for HTML5 (OpenUI5)
- * (c) Copyright 2009-2017 SAP SE or an SAP affiliate company.
+ * (c) Copyright 2009-2018 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
  */
 
@@ -103,7 +103,7 @@ sap.ui.define([
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.50.8
+	 * @version 1.50.9
 	 * @constructor
 	 * @private
 	 * @since 1.30
@@ -976,19 +976,30 @@ sap.ui.define([
 		}, []);
 
 		this._getFlexController().getComponentChanges({currentLayer: sCurrentLayer}).then(function(aChanges) {
-			aChanges = aChanges.concat(aUnsavedChanges);
 			return FlexSettings.getInstance(FlexUtils.getComponentClassName(this._oRootControl)).then(function(oSettings) {
 				if (!oSettings.isProductiveSystem() && !oSettings.hasMergeErrorOccured()) {
 					return oTransportSelection.setTransports(aChanges, this._oRootControl);
 				}
 			}.bind(this)).then(function() {
+				BusyIndicator.show(0);
+				aChanges = aChanges.concat(aUnsavedChanges);
 				return this._getFlexController().discardChanges(aChanges, sCurrentLayer === "USER");
 			}.bind(this)).then(function() {
-				return window.location.reload();
-			});
+				BusyIndicator.hide();
+				this._reloadPage();
+			}.bind(this));
 		}.bind(this))["catch"](function(oError) {
+			BusyIndicator.hide();
 			return this._showMessage(MessageBox.Icon.ERROR, "HEADER_RESTORE_FAILED", "MSG_RESTORE_FAILED", oError);
 		}.bind(this));
+	};
+
+	/**
+	 * Reloads the page.
+	 * @private
+	 */
+	RuntimeAuthoring.prototype._reloadPage = function(){
+		window.location.reload();
 	};
 
 	/**
