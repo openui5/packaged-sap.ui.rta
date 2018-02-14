@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.BaseCommand
 	 * @author SAP SE
-	 * @version 1.52.5
+	 * @version 1.52.6
 	 * @constructor
 	 * @private
 	 * @since 1.52
