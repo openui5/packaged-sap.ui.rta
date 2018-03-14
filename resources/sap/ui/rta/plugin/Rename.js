@@ -39,7 +39,7 @@ sap.ui.define([
 	 * @extends sap.ui.rta.plugin.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.54.1
+	 * @version 1.54.2
 	 *
 	 * @constructor
 	 * @private
@@ -90,7 +90,11 @@ sap.ui.define([
 		var oElement = oOverlay.getElement(),
 			oDesignTimeMetadata = oOverlay.getDesignTimeMetadata(),
 			vDomRef = oDesignTimeMetadata.getAction("rename", oElement).domRef;
-		RenameHandler.startEdit.call(this, oOverlay, vDomRef, "plugin.Rename.startEdit");
+		RenameHandler.startEdit.call(this, {
+			overlay: oOverlay,
+			domRef: vDomRef,
+			pluginMethodName: "plugin.Rename.startEdit"
+		});
 	};
 
 	Rename.prototype.stopEdit = function (bRestoreFocus) {

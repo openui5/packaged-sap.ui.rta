@@ -99,7 +99,7 @@ sap.ui.define([
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.54.1
+	 * @version 1.54.2
 	 * @constructor
 	 * @private
 	 * @since 1.30
@@ -946,11 +946,12 @@ sap.ui.define([
 	 * @private
 	 */
 	RuntimeAuthoring.prototype._deleteChanges = function() {
-		this._getFlexController().resetChanges(this.getLayer(), "Change.createInitialFileContent").then(function() {
-			this._reloadPage();
-		}.bind(this))["catch"](function(oError) {
-			return Utils._showMessageBox(MessageBox.Icon.ERROR, "HEADER_RESTORE_FAILED", "MSG_RESTORE_FAILED", oError);
-		});
+		return this._getFlexController().resetChanges(this.getLayer(), "Change.createInitialFileContent", FlexUtils.getAppComponentForControl(this._oRootControl || sap.ui.getCore().byId(this.getRootControl())))
+			.then(function() {
+				this._reloadPage();
+			}.bind(this))["catch"](function(oError) {
+				return Utils._showMessageBox(MessageBox.Icon.ERROR, "HEADER_RESTORE_FAILED", "MSG_RESTORE_FAILED", oError);
+			});
 	};
 
 	/**
@@ -1048,32 +1049,31 @@ sap.ui.define([
 	 * @param {string} sNewControlID The id of the newly created container
 	 */
 	RuntimeAuthoring.prototype._setRenameOnCreatedContainer = function(vAction, sNewControlID) {
+		var fnStartEdit = function (oElementOverlay) {
+			oElementOverlay.setSelected(true);
+			this.getPlugins()["rename"].startEdit(oElementOverlay);
+		};
+		var fnGeometryChangedCallback = function(oEvent) {
+			var oElementOverlay = oEvent.getSource();
+			if (oElementOverlay.getGeometry() && oElementOverlay.getGeometry().visible) {
+				fnStartEdit.call(this, oElementOverlay);
+				oElementOverlay.detachEvent('geometryChanged', fnGeometryChangedCallback, this);
+			}
+		};
 		var sNewContainerID = this.getPlugins()["createContainer"].getCreatedContainerId(vAction, sNewControlID);
+
 		this._oDesignTime.attachEvent("elementOverlayCreated", function(oEvent){
 			var oNewOverlay = oEvent.getParameter("elementOverlay");
 			if (oNewOverlay.getElement().getId() === sNewContainerID) {
-				oNewOverlay.attachEventOnce("geometryChanged", function(oEvent){
-					oNewOverlay.setSelected(true);
-					this.getPlugins()["rename"].startEdit(oNewOverlay);
-				}.bind(this));
+				// the control can be set to visible, but still the control has no size when we do the check.
+				// that's why we also attach go 'geometryChanged' and check if the overlay has a size
+				if (!oNewOverlay.getGeometry() || !oNewOverlay.getGeometry().visible) {
+					oNewOverlay.attachEvent('geometryChanged', fnGeometryChangedCallback, this);
+				} else {
+					fnStartEdit.call(this, oNewOverlay);
+				}
 			}
 		}.bind(this));
-	};
-
-	/**
-	 * Function to automatically start the rename of the control variant plugin
-	 */
-	RuntimeAuthoring.prototype._setTitleOnCreatedVariant = function() {
-		var oVariantManagementControlOverlay = this.getPlugins()["controlVariant"].getVariantManagementControlOverlay();
-		if (oVariantManagementControlOverlay) {
-			oVariantManagementControlOverlay.attachEventOnce("geometryChanged", function(oEvent){
-				var oOverlay = oEvent.getSource();
-				if (oOverlay.getGeometry() && oOverlay.getGeometry().visible){
-					oOverlay.setSelected(true);
-					this.getPlugins()["controlVariant"].startEdit(oOverlay);
-				}
-			}, this);
-		}
 	};
 
 	/**
@@ -1094,8 +1094,6 @@ sap.ui.define([
 			return this.getCommandStack().pushAndExecute(oCommand).then(function(){
 				if (vAction && sNewControlID){
 					this._setRenameOnCreatedContainer(vAction, sNewControlID);
-				} else if (vAction === "setTitle"){
-					this._setTitleOnCreatedVariant();
 				}
 			}.bind(this))
 

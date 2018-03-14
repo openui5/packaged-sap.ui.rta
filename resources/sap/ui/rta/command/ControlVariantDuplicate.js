@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.BaseCommand
 	 * @author SAP SE
-	 * @version 1.54.1
+	 * @version 1.54.2
 	 * @constructor
 	 * @private
 	 * @since 1.52
@@ -30,6 +30,9 @@ sap.ui.define([
 					type : "string"
 				},
 				newVariantReference : {
+					type : "string"
+				},
+				newVariantTitle : {
 					type : "string"
 				}
 			},
@@ -46,6 +49,13 @@ sap.ui.define([
 	ControlVariantDuplicate.prototype.prepare = function(mFlexSettings, sVariantManagementReference) {
 		this.sLayer = mFlexSettings.layer;
 		return true;
+	};
+
+	ControlVariantDuplicate.prototype.getPreparedChange = function() {
+		if (!this._aPreparedChanges) {
+			jQuery.sap.log.error("No prepared change available for ControlVariantDuplicate");
+		}
+		return this._aPreparedChanges;
 	};
 
 	/**
@@ -71,12 +81,14 @@ sap.ui.define([
 				appComponent : this.oAppComponent,
 				layer : this.sLayer,
 				newVariantReference : sNewVariantReference,
-				sourceVariantReference : sSourceVariantReference
+				sourceVariantReference : sSourceVariantReference,
+				title: this.getNewVariantTitle()
 		};
 
 		return this.oModel._copyVariant(mPropertyBag)
-			.then(function(oVariant){
-				this._oVariantChange = oVariant;
+			.then(function(aChanges){
+				this._oVariantChange = aChanges[0];
+				this._aPreparedChanges = aChanges;
 			}.bind(this));
 	};
 
@@ -86,9 +98,10 @@ sap.ui.define([
 	 */
 	ControlVariantDuplicate.prototype.undo = function() {
 		if (this._oVariantChange) {
-			return this.oModel._removeVariant(this._oVariantChange, this.getSourceVariantReference(), this.sVariantManagementReference)
+			return this.oModel.removeVariant(this._oVariantChange, this.getSourceVariantReference(), this.sVariantManagementReference)
 				.then(function() {
 					this._oVariantChange = null;
+					this._aPreparedChanges = null;
 				}.bind(this));
 		}
 	};

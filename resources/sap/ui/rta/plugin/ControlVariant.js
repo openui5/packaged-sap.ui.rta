@@ -16,8 +16,9 @@ sap.ui.define([
 	'sap/ui/fl/Utils',
 	'sap/ui/fl/variants/VariantManagement',
 	'sap/ui/base/ManagedObject',
-	'sap/m/delegate/ValueStateMessage'
-], function(Plugin, RenameHandler, Utils, ElementOverlay, OverlayRegistry, OverlayUtil, BaseTreeModifier, flUtils, VariantManagement, ManagedObject, ValueStateMessage) {
+	'sap/m/delegate/ValueStateMessage',
+	'sap/ui/rta/command/CompositeCommand'
+], function(Plugin, RenameHandler, Utils, ElementOverlay, OverlayRegistry, OverlayUtil, BaseTreeModifier, flUtils, VariantManagement, ManagedObject, ValueStateMessage, CompositeCommand) {
 	"use strict";
 
 	/**
@@ -28,7 +29,7 @@ sap.ui.define([
 	 * @class The ControlVariant allows propagation of variantManagement key
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.54.1
+	 * @version 1.54.2
 	 * @constructor
 	 * @private
 	 * @since 1.50
@@ -346,43 +347,59 @@ sap.ui.define([
 	 * @public
 	 */
 	ControlVariant.prototype.renameVariant = function(aOverlays) {
+		this.setVariantManagementControlOverlay(aOverlays[0]);
 		this.startEdit(aOverlays[0]);
 	};
 
 	ControlVariant.prototype.startEdit = function(oOverlay) {
 		var oVariantManagementControl = oOverlay.getElement(),
-			vDomRef = function () {
-				return oVariantManagementControl.getTitle().getDomRef("inner");
-			};
+			vDomRef = oOverlay.getDesignTimeMetadata().getDomRef();
+		var oVariantTitleElement = oVariantManagementControl.getTitle();
+		var sPreviousText = oVariantTitleElement.getText();
+		var fnHandleStartEdit = RenameHandler.startEdit.bind( this, {
+			overlay: oOverlay,
+			domRef: vDomRef,
+			pluginMethodName: "plugin.ControlVariant.startEdit"
+		});
 
-		RenameHandler.startEdit.call(this, oOverlay, vDomRef, "plugin.ControlVariant.startEdit");
+		if (oOverlay._triggerDuplicate) {
+			var sCustomTextForDuplicate = this._getVariantTitleForCopy(
+				sPreviousText,
+				oOverlay.getVariantManagement(),
+				this._getVariantModel(oVariantManagementControl).getData()
+			);
+
+			oVariantManagementControl.getTitle().setText(sCustomTextForDuplicate);
+
+			oOverlay.attachEventOnce("geometryChanged", function() {
+				fnHandleStartEdit();
+			}, this);
+		} else {
+			fnHandleStartEdit();
+		}
 	};
 
 	ControlVariant.prototype.stopEdit = function (bRestoreFocus) {
+		if (this._oEditedOverlay._triggerDuplicate) {
+			this._oEditedOverlay.getElementInstance().getTitle().getBinding("text").refresh(true);
+			if (!this._oEditedOverlay.hasStyleClass("sapUiRtaErrorBg")) {
+				delete this._oEditedOverlay._triggerDuplicate;
+			}
+		}
+
 		RenameHandler._stopEdit.call(this, bRestoreFocus, "plugin.ControlVariant.stopEdit");
 	};
 
-	/**
-	 * Performs a variant duplicate
-	 *
-	 * @param {object} oOverlay Variant management overlay
-	 * @public
-	 */
-	ControlVariant.prototype.duplicateVariant = function(oOverlay) {
-		this.setVariantManagementControlOverlay(oOverlay);
-		var sVariantManagementReference = oOverlay.getVariantManagement();
-		var oElement = oOverlay.getElement();
-		var oModel = this._getVariantModel(oElement);
-		var sCurrentVariantReference = oModel.getCurrentVariantReference(sVariantManagementReference);
-		var oDesignTimeMetadata = oOverlay.getDesignTimeMetadata();
+	ControlVariant.prototype.isBusy = function(){
+		return this._bPreventMenu;
+	};
 
-		var oDuplicateCommand = this.getCommandFactory().getCommandFor(oElement, "duplicate", {
-			sourceVariantReference: sCurrentVariantReference
-		}, oDesignTimeMetadata, sVariantManagementReference);
-		this.fireElementModified({
-			"command" : oDuplicateCommand,
-			"action" : "setTitle"
-		});
+	ControlVariant.prototype._createDuplicateCommand = function (mPropertyBag) {
+		var oDuplicateCommand = this.getCommandFactory().getCommandFor(mPropertyBag.element, "duplicate", {
+			sourceVariantReference: mPropertyBag.currentVariantReference,
+			newVariantTitle: mPropertyBag.newVariantTitle
+		}, mPropertyBag.designTimeMetadata, mPropertyBag.variantManagementReference);
+		return oDuplicateCommand;
 	};
 
 	/**
@@ -395,12 +412,18 @@ sap.ui.define([
 			oRenamedElement = oOverlay.getElement(),
 			oModel = this._getVariantModel(oRenamedElement),
 			sErrorText,
+			oCommand,
 			sVariantManagementReference = oOverlay.getVariantManagement(),
-			iDuplicateCount = oModel._getVariantTitleCount(sText, sVariantManagementReference),
-			oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.ui.rta");
+			bTextChanged = this.getOldValue() !== sText,
+			bNewEntry = bTextChanged || oOverlay._triggerDuplicate,
+			iDuplicateCount = bNewEntry
+				? oModel._getVariantTitleCount(sText, sVariantManagementReference)
+				: 0,
+			oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.ui.rta"),
+			sCurrentVariantReference = oModel.getCurrentVariantReference(sVariantManagementReference);
 
 		//Remove border
-		oOverlay.$().removeClass("sapUiErrorBg");
+		oOverlay.removeStyleClass("sapUiRtaErrorBg");
 
 		//Close valueStateMessage
 		if (this._oValueStateMessage) {
@@ -410,32 +433,55 @@ sap.ui.define([
 			this._oValueStateMessage.close();
 		}
 
-		//For newly created variants, duplicate triggered on count of 2
-		if (iDuplicateCount > 1) {
+		//Check for real change before creating a command and pass if warning text already set
+		if (sText === '\xa0') { //Empty string
+			sErrorText = "BLANK_ERROR_TEXT";
+		} else if (iDuplicateCount > 0) {
 			sErrorText = "DUPLICATE_ERROR_TEXT";
+		} else if (bNewEntry) {
+
+			var oSetTitleCommand = this._createSetTitleCommand({
+				text: sText,
+				element: oRenamedElement,
+				designTimeMetadata: oDesignTimeMetadata,
+				variantManagementReference: sVariantManagementReference
+			});
+
+			if (oOverlay._triggerDuplicate) {
+				oCommand = new CompositeCommand({
+					commands: [
+						this._createDuplicateCommand({
+							currentVariantReference: sCurrentVariantReference,
+							designTimeMetadata: oDesignTimeMetadata,
+							variantManagementReference: sVariantManagementReference,
+							element: oRenamedElement,
+							newVariantTitle: this.getOldValue()
+						})
+					]
+				});
+				if (bTextChanged) {
+					oCommand.addCommand(oSetTitleCommand);
+				}
+			} else {
+				oCommand = oSetTitleCommand;
+			}
+			this.fireElementModified({
+				"command": oCommand
+			});
+			return oCommand;
+		} else {
+			jQuery.sap.log.info("Control Variant title unchanged");
 		}
 
-		//Check for real change before creating a command and pass if warning text already set
-		if (this.getOldValue() !== sText && !sErrorText) {
-			if (sText === '\xa0') { //Empty string
-				sErrorText = "BLANK_ERROR_TEXT";
-			} else if (iDuplicateCount > 0) {
-				sErrorText = "DUPLICATE_ERROR_TEXT";
-			} else if (!sErrorText) {
-				return this._createSetTitleCommand({
-					text: sText,
-					element: oRenamedElement,
-					designTimeMetadata: oDesignTimeMetadata,
-					variantManagementReference: sVariantManagementReference
-				});
-			}
-		}
 
 		if (sErrorText) {
 			var sValueStateText = oResourceBundle.getText(sErrorText);
 			this._prepareOverlayForValueState(oOverlay, sValueStateText);
 
-			return Utils._showMessageBox("ERROR", "BLANK_DUPLICATE_TITLE_TEXT", sErrorText)
+			//Border
+			oOverlay.addStyleClass("sapUiRtaErrorBg");
+
+			Utils._showMessageBox("ERROR", "BLANK_DUPLICATE_TITLE_TEXT", sErrorText)
 				.then(function () {
 					//valueStateMessage
 					if (!this._oValueStateMessage) {
@@ -444,12 +490,88 @@ sap.ui.define([
 					}
 					this._oValueStateMessage.open();
 
-					//Border
-					oOverlay.$().addClass("sapUiErrorBg");
-
 					this.startEdit(oOverlay);
 				}.bind(this));
 		}
+
+	};
+
+	/**
+	 * Calculates title string for a duplicated variant
+	 *
+	 * For single copy - {0} is filled with the source variant title
+	 * E.g. if resource bundle text pattern is {0} Copy;
+	 * Duplicate (Source = 'Standard') -> 'Standard Copy'
+	 *
+	 * For multiple copies - {0} is filled with source variant title (no copy/counter) and {1} is filled with the highest counter of source variant tile
+	 * E.g. if resource bundle text pattern is {0} Copy {1};
+	 * Duplicate (Source = 'Standard Copy 1', with 'Standard Copy 5' already existing) -> 'Standard Copy 6'
+	 *
+	 * @param {String} sSourceVariantTitle Source variant title
+	 * @param {String} sVariantManagementReference Variant management reference belonging to the variants
+	 * @param {object} oData Variant Model (sap.ui.fl.variants.VariantModel) data
+	 * @returns {String} Returns the duplicate variant title
+	 * @private
+	 */
+	ControlVariant.prototype._getVariantTitleForCopy = function(sSourceVariantTitle, sVariantManagementReference, oData) {
+		var oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.ui.fl");
+		// \ ^ $ * + ? . ( ) | { } [ ] escaped for regex
+		var sCopyTextSingle =
+			oResourceBundle.getText("VARIANT_COPY_SINGLE_TEXT")
+				.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")
+				.replace("\\{0\\}", "(.*)");
+
+		var sCopyTextMultiple =
+			oResourceBundle.getText("VARIANT_COPY_MULTIPLE_TEXT")
+				.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&")
+				.replace("\\{0\\}", "(.*)")
+				.replace("\\{1\\}", "([0-9]+)");
+
+		var regexForCopy = new RegExp(sCopyTextSingle + "+");
+		var regexForIncrement = new RegExp(sCopyTextMultiple);
+		var sTitleTrimmed;
+		var iIndexForCounter = sCopyTextMultiple.lastIndexOf("(.*)") > sCopyTextMultiple.lastIndexOf("([0-9]+)") ? 1 : 2;
+		var iIndexForTrimmedTitle = (iIndexForCounter === 1) ? 2 : 1;
+		var iTitleCounter = 0;
+
+		if (regexForIncrement.test(sSourceVariantTitle)) { /* Case 1: when Copy already has a counter in the end of string */
+			sTitleTrimmed = regexForIncrement.exec(sSourceVariantTitle)[iIndexForTrimmedTitle];
+		} else {
+			sTitleTrimmed =
+				regexForCopy.test(sSourceVariantTitle)
+					? regexForCopy.exec(sSourceVariantTitle)[1] /* Case 2: when Copy already exists at the end of string */
+					: sSourceVariantTitle; /* Case 3: when there is no copy or counter in the end of string */
+		}
+
+		var aRegexExecOnVariantTitle = [];
+		oData[sVariantManagementReference].variants.forEach( function(oVariant) {
+			if (oVariant.visible) {
+				aRegexExecOnVariantTitle =
+					regexForIncrement.test(oVariant.title)
+						? regexForIncrement.exec(oVariant.title)
+						: regexForCopy.exec(oVariant.title);
+
+				if (!aRegexExecOnVariantTitle) {
+					return;
+				}
+				/* First copy with counter is matched, if not, then only copy is matched */
+				if (aRegexExecOnVariantTitle.length === 3 &&
+					sTitleTrimmed === aRegexExecOnVariantTitle[iIndexForTrimmedTitle]) {
+					// Extract integer part & increment counter
+					iTitleCounter =
+						aRegexExecOnVariantTitle[iIndexForCounter]
+							? (parseInt(aRegexExecOnVariantTitle[iIndexForCounter], 10) + 1)
+							: iTitleCounter;
+
+				} else if (aRegexExecOnVariantTitle.length === 2
+					&& sTitleTrimmed === aRegexExecOnVariantTitle[1]) {
+					iTitleCounter = iTitleCounter === 0 ? 1 : iTitleCounter;
+				}
+			}
+		});
+		return iTitleCounter > 0
+			? oResourceBundle.getText("VARIANT_COPY_MULTIPLE_TEXT", [sTitleTrimmed, iTitleCounter])
+			: oResourceBundle.getText("VARIANT_COPY_SINGLE_TEXT", [sTitleTrimmed]);
 	};
 
 	/**
@@ -463,12 +585,8 @@ sap.ui.define([
 		this._$oEditableControlDomRef.text(mPropertyBag.text);
 		try {
 			oSetTitleCommand = this.getCommandFactory().getCommandFor(mPropertyBag.element, "setTitle", {
-				renamedElement: mPropertyBag.element,
 				newText: mPropertyBag.text
 			}, mPropertyBag.designTimeMetadata, mPropertyBag.variantManagementReference);
-			this.fireElementModified({
-				"command": oSetTitleCommand
-			});
 		} catch (oError) {
 			jQuery.sap.log.error("Error during rename : ", oError);
 		}
@@ -540,7 +658,8 @@ sap.ui.define([
 				id: "CTX_VARIANT_DUPLICATE",
 				text: sap.ui.getCore().getLibraryResourceBundle('sap.ui.rta').getText('CTX_VARIANT_DUPLICATE'),
 				handler: function(aOverlays){
-					return this.duplicateVariant(aOverlays[0]);
+					aOverlays[0]._triggerDuplicate = true;
+					this.renameVariant(aOverlays);
 				}.bind(this),
 				enabled: this.isVariantDuplicateEnabled.bind(this),
 				rank: 220,

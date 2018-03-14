@@ -37,7 +37,7 @@ function(
 	 * @extends sap.ui.dt.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.54.1
+	 * @version 1.54.2
 	 *
 	 * @constructor
 	 * @private
@@ -108,7 +108,7 @@ function(
 		};
 
 		oOverlay.attachElementModified(_onElementModified, this);
-		if (!oOverlay.getElement().getDomRef()) {
+		if (!oOverlay.getGeometry() || !oOverlay.getGeometry().visible) {
 			oOverlay.attachEvent('geometryChanged', fnGeometryChangedCallback, this);
 		}
 	};

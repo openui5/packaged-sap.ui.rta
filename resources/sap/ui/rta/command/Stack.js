@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.54.1
+	 * @version 1.54.2
 	 * @constructor
 	 * @private
 	 * @since 1.34

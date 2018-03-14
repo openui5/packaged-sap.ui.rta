@@ -134,13 +134,14 @@ function(
 		var sNewText = "Test";
 
 		var oControlVariantSetTitleCommand = CommandFactory.getCommandFor(this.oVariantManagement, "setTitle", {
-			renamedElement : this.oVariantManagement,
 			newText : sNewText
 		}, oDesignTimeMetadata, mFlexSettings);
 
-		assert.ok(oControlVariantSetTitleCommand, "control variant duplicate command exists for element");
+		assert.ok(oControlVariantSetTitleCommand, "control variant setTitle command exists for element");
 		oControlVariantSetTitleCommand.execute().then(function() {
 			var oTitleChange = oControlVariantSetTitleCommand.getVariantChange();
+			var oPreparedChange = oControlVariantSetTitleCommand.getPreparedChange();
+			assert.equal(oPreparedChange, oTitleChange, "then the prepared change is available");
 			assert.equal(oTitleChange.getText("title"), sNewText, "then title is correctly set in change");
 			var oData = oControlVariantSetTitleCommand.oModel.getData();
 			assert.equal(oData["variantMgmtId1"].variants[1].title, sNewText, "then title is correctly set in model");
@@ -149,6 +150,8 @@ function(
 
 			oControlVariantSetTitleCommand.undo().then( function() {
 				oTitleChange = oControlVariantSetTitleCommand.getVariantChange();
+				oPreparedChange = oControlVariantSetTitleCommand.getPreparedChange();
+				assert.notOk(oPreparedChange, "then no prepared change is available after undo");
 				oData = oControlVariantSetTitleCommand.oModel.getData();
 				assert.equal(oData["variantMgmtId1"].variants[1].title, "variant A", "then title is correctly reverted in model");
 				assert.equal(this.oVariantManagement.getTitle().getText(), "variant A", "then title is correctly set in variant management control");
