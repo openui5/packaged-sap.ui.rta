@@ -30,7 +30,7 @@ function(
 	 * @extends sap.ui.rta.toolbar.Adaptation
 	 *
 	 * @author SAP SE
-	 * @version 1.54.0
+	 * @version 1.54.1
 	 *
 	 * @constructor
 	 * @private
@@ -102,6 +102,16 @@ function(
 				"but actual is " + iNaturalWidth + "x" + iNaturalHeight
 			].join(' '));
 		}
+	};
+
+	Fiori.prototype.destroy = function () {
+		// In case of destroy() without normal hide() call.
+		this._oFioriHeader.removeStyleClass(FIORI_HIDDEN_CLASS);
+
+		delete this._oRenderer;
+		delete this._oFioriHeader;
+
+		Adaptation.prototype.destroy.apply(this, arguments);
 	};
 
 	return Fiori;

@@ -28,7 +28,7 @@ sap.ui.define([
 	 * @class The ControlVariant allows propagation of variantManagement key
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.54.0
+	 * @version 1.54.1
 	 * @constructor
 	 * @private
 	 * @since 1.50
@@ -396,7 +396,7 @@ sap.ui.define([
 			oModel = this._getVariantModel(oRenamedElement),
 			sErrorText,
 			sVariantManagementReference = oOverlay.getVariantManagement(),
-			iDuplicateCount = oModel._getVariantLabelCount(sText, sVariantManagementReference),
+			iDuplicateCount = oModel._getVariantTitleCount(sText, sVariantManagementReference),
 			oResourceBundle = sap.ui.getCore().getLibraryResourceBundle("sap.ui.rta");
 
 		//Remove border

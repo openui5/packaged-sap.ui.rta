@@ -35,7 +35,6 @@ sap.ui.define([
 		"sap/ui/dt/plugin/TabHandling",
 		"sap/ui/fl/FlexControllerFactory",
 		"sap/ui/rta/Utils",
-		"sap/ui/fl/transport/TransportSelection",
 		"sap/ui/fl/Utils",
 		"sap/ui/fl/registry/Settings",
 		"sap/m/MessageBox",
@@ -78,7 +77,6 @@ sap.ui.define([
 		TabHandlingPlugin,
 		FlexControllerFactory,
 		Utils,
-		TransportSelection,
 		FlexUtils,
 		FlexSettings,
 		MessageBox,
@@ -101,7 +99,7 @@ sap.ui.define([
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.54.0
+	 * @version 1.54.1
 	 * @constructor
 	 * @private
 	 * @since 1.30
@@ -528,9 +526,7 @@ sap.ui.define([
 					jQuery.sap.measure.end("rta.dt.startup","Measurement of RTA: DesignTime start up");
 				}, this);
 
-				this._oDesignTime.attachEventOnce("syncFailed", function() {
-					this.fireFailed();
-				}, this);
+				this._oDesignTime.attachEventOnce("syncFailed", this.fireFailed);
 
 				// Register function for checking unsaved before leaving RTA
 				this._oldUnloadHandler = window.onbeforeunload;
@@ -567,7 +563,8 @@ sap.ui.define([
 						var sStyles = sData.replace(/%scrollWidth%/g, DOMUtil.getScrollbarWidth() + 'px');
 						DOMUtil.insertStyles(sStyles);
 					});
-			})
+				this._oDesignTime.detachEvent("syncFailed", this.fireFailed);
+			}.bind(this))
 			.catch(function(vError) {
 				if (vError) {
 					return Promise.reject(vError);
@@ -867,9 +864,12 @@ sap.ui.define([
 			}
 
 			this._checkChangesExist().then(function(bResult){
-				this._bChangesExist = bResult;
-				this.getToolbar().setPublishEnabled(bResult);
-				this.getToolbar().setRestoreEnabled(bResult);
+				// FIXME: remove this condition when start() is refactored properly
+				if (!this.bIsDestroyed) {
+					this._bChangesExist = bResult;
+					this.getToolbar().setPublishEnabled(bResult);
+					this.getToolbar().setRestoreEnabled(bResult);
+				}
 			}.bind(this));
 		}
 	};
@@ -926,15 +926,14 @@ sap.ui.define([
 	 * @private
 	 */
 	RuntimeAuthoring.prototype._onTransport = function() {
-		var oTransportSelection = new TransportSelection();
 		this._handleStopCutPaste();
 
 		BusyIndicator.show(500);
 		return this._serializeToLrep().then(function () {
 			BusyIndicator.hide();
-			return oTransportSelection.transportAllUIChanges(this._oRootControl, Utils.getRtaStyleClassName(), this.getLayer())
-				.then(function(sError) {
-					if (sError !== "Error") {
+			return this._getFlexController()._oChangePersistence.transportAllUIChanges(this._oRootControl, Utils.getRtaStyleClassName(), this.getLayer())
+				.then(function(sResponse) {
+					if (sResponse !== "Error" && sResponse !== "Cancel") {
 						this._showMessageToast("MSG_TRANSPORT_SUCCESS");
 					}
 				}.bind(this));
@@ -947,34 +946,9 @@ sap.ui.define([
 	 * @private
 	 */
 	RuntimeAuthoring.prototype._deleteChanges = function() {
-		var oTransportSelection = new TransportSelection();
-		var sCurrentLayer = this.getLayer();
-
-		// all new changes from commands that are only in our stack and not yet in the LREP, filtered by them having a change
-		var aUnsavedChanges = this.getCommandStack().getAllExecutedCommands().reduce(function(aChanges, oCommand) {
-			if (oCommand.getPreparedChange) {
-				aChanges.push(oCommand.getPreparedChange());
-			} else if (oCommand.getVariantChange && oCommand.getVariantChange()) {
-				aChanges.push(oCommand.getVariantChange());
-			}
-			return aChanges;
-		}, []);
-
-		this._getFlexController().getComponentChanges({currentLayer: sCurrentLayer}).then(function(aChanges) {
-			return FlexSettings.getInstance(FlexUtils.getComponentClassName(this._oRootControl)).then(function(oSettings) {
-				if (!oSettings.isProductiveSystem() && !oSettings.hasMergeErrorOccured()) {
-					return oTransportSelection.setTransports(aChanges, this._oRootControl);
-				}
-			}.bind(this)).then(function() {
-				BusyIndicator.show(0);
-				aChanges = aChanges.concat(aUnsavedChanges);
-				return this._getFlexController().discardChanges(aChanges, sCurrentLayer === "USER");
-			}.bind(this)).then(function() {
-				BusyIndicator.hide();
-				this._reloadPage();
-			}.bind(this));
+		this._getFlexController().resetChanges(this.getLayer(), "Change.createInitialFileContent").then(function() {
+			this._reloadPage();
 		}.bind(this))["catch"](function(oError) {
-			BusyIndicator.hide();
 			return Utils._showMessageBox(MessageBox.Icon.ERROR, "HEADER_RESTORE_FAILED", "MSG_RESTORE_FAILED", oError);
 		});
 	};
@@ -1165,7 +1139,7 @@ sap.ui.define([
 	 */
 	RuntimeAuthoring.prototype._checkChangesExist = function() {
 		if (this._getFlexController().getComponentName().length > 0) {
-			return this._getFlexController().getComponentChanges({currentLayer: this.getLayer()}).then(function(aAllLocalChanges) {
+			return this._getFlexController().getComponentChanges({currentLayer: this.getLayer(), includeCtrlVariants: true}).then(function(aAllLocalChanges) {
 				return aAllLocalChanges.length > 0;
 			});
 		} else {

@@ -42,7 +42,7 @@ function (
 	 * Constructor for a new sap.ui.rta.util.PopupManager
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.54.0
+	 * @version 1.54.1
 	 * @constructor
 	 * @private
 	 * @since 1.48
@@ -299,12 +299,11 @@ function (
 	 * @private
 	 */
 	PopupManager.prototype._applyPopupPatch = function(oPopupElement) {
-		var oPopupOverlay = OverlayRegistry.getOverlay(oPopupElement);
-		var oOverlayContainer = Overlay.getOverlayContainer(oPopupOverlay);
+		var oOverlayContainer = Overlay.getOverlayContainer();
 		var oPopup = oPopupElement.oPopup;
 		var aAutoCloseAreas = [
 			oPopup.oContent.getDomRef(),
-			oOverlayContainer
+			oOverlayContainer.get(0)
 		].concat(
 			this.getAutoCloseAreas()
 		);

@@ -41,7 +41,7 @@ function(
 	 * The RTAElementMover is responsible for the RTA specific adaptation of element movements.
 	 *
 	 * @author SAP SE
-	 * @version 1.54.0
+	 * @version 1.54.1
 	 *
 	 * @constructor
 	 * @private
@@ -90,7 +90,11 @@ function(
 	RTAElementMover.prototype.isEditable = function(oOverlay, bOnRegistration) {
 		var oElement = oOverlay.getElement();
 		var bMovable = false;
-		if (this.isMovableType(oElement) && this.checkMovable(oOverlay, bOnRegistration)) {
+		if (
+			this.isMovableType(oElement)
+			&& this.checkMovable(oOverlay, bOnRegistration)
+			&& !OverlayUtil.isInAggregationBinding(oOverlay, oElement.sParentAggregationName)
+		) {
 			bMovable = true;
 		}
 		oOverlay.setMovable(bMovable);

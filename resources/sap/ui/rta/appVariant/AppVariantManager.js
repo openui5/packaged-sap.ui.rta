@@ -34,7 +34,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.54.0
+	 * @version 1.54.1
 	 * @constructor
 	 * @private
 	 * @since 1.53
@@ -288,9 +288,9 @@ sap.ui.define([
 				BusyIndicator.hide();
 				return AppVariantUtils.showRelevantDialog(oErrorInfo, false);
 			});
-		} else {
-			return Promise.resolve(true);
 		}
+
+		return Promise.resolve();
 	};
 
 	/**
@@ -306,9 +306,9 @@ sap.ui.define([
 				BusyIndicator.hide();
 				return AppVariantUtils.showRelevantDialog(oErrorInfo, false);
 			});
-		} else {
-			return Promise.resolve(true);
 		}
+
+		return Promise.resolve();
 	};
 
 	/**
@@ -380,11 +380,11 @@ sap.ui.define([
 			var oCrossAppNav = sap.ushell.Container.getService("CrossApplicationNavigation");
 			if (oCrossAppNav.toExternal){
 				oCrossAppNav.toExternal({target: {shellHash: "#"}}, oComponentInstance);
-				return Promise.resolve(true);
+				return Promise.resolve();
 			}
 		}
 
-		return Promise.resolve(false);
+		return Promise.resolve();
 	};
 
 	/**
@@ -400,11 +400,7 @@ sap.ui.define([
 		var oSuccessInfo = this._buildSuccessInfo(oAppVariantDescriptor, bSaveAsTriggeredFromRtaToolbar);
 		BusyIndicator.hide();
 		return AppVariantUtils.showRelevantDialog(oSuccessInfo, true).then(function() {
-			if (bSaveAsTriggeredFromRtaToolbar) {
-				return this._navigateToFLPHomepage();
-			} else {
-				return RtaAppVariantFeature.onGetOverview(true);
-			}
+			return bSaveAsTriggeredFromRtaToolbar ? this._navigateToFLPHomepage() : RtaAppVariantFeature.onGetOverview(true);
 		}.bind(this));
 	};
 

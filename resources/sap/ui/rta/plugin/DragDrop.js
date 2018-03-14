@@ -34,7 +34,7 @@ function(
 	 * @extends sap.ui.dt.ControlDragDrop
 	 *
 	 * @author SAP SE
-	 * @version 1.54.0
+	 * @version 1.54.1
 	 *
 	 * @constructor
 	 * @private
@@ -88,11 +88,7 @@ function(
 	 * @override
 	 */
 	DragDrop.prototype._isEditable = function(oOverlay, mPropertyBag) {
-		var bMovable = this.getElementMover().isEditable(oOverlay, mPropertyBag.onRegistration);
-		if (bMovable) {
-			this._attachMovableBrowserEvents(oOverlay);
-		}
-		return bMovable;
+		return this.getElementMover().isEditable(oOverlay, mPropertyBag.onRegistration);
 	};
 
 	/**

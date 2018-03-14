@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.BaseCommand
 	 * @author SAP SE
-	 * @version 1.54.0
+	 * @version 1.54.1
 	 * @constructor
 	 * @private
 	 * @since 1.52
@@ -67,7 +67,7 @@ sap.ui.define([
 		this.oModel = this.oAppComponent.getModel(this.MODEL_NAME);
 
 		var mPropertyBag = {
-				variantManagementControl : oVariantManagementControl,
+				variantManagementReference : this.sVariantManagementReference,
 				appComponent : this.oAppComponent,
 				layer : this.sLayer,
 				newVariantReference : sNewVariantReference,
