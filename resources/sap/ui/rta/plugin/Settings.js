@@ -19,7 +19,7 @@ sap.ui.define([
 	 * @class The Settings allows trigger change of settings operations on the overlay
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.52.8
+	 * @version 1.52.9
 	 * @constructor
 	 * @private
 	 * @since 1.44
