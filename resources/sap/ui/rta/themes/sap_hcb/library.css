@@ -363,4 +363,4 @@
 }
 
 /* Inline theming parameters */
-#sap-ui-theme-sap\.ui\.rta { background-image: url('data:text/plain;utf-8,%7B%22_sap_ui_rta_Overlay_ActiveBG%22:%22rgba%2822, 137, 217, 0.3%29%22,%22_sap_ui_rta_Overlay_BaseBG%22:%22#000000%22,%22_sap_ui_rta_Overlay_Border%22:%22#03b803%22,%22_sap_ui_rta_Overlay_HoverBG%22:%22rgba%28199, 132, 0, 0.3%29%22%7D'); }
+#sap-ui-theme-sap\.ui\.rta { background-image: url('data:text/plain;utf-8,%7B%22_sap_ui_rta_Overlay_ActiveBG%22:%22rgba%2822, 137, 217, 0.3%29%22,%22_sap_ui_rta_Overlay_BaseBG%22:%22#000000%22,%22_sap_ui_rta_Overlay_Border%22:%22#03b803%22,%22_sap_ui_rta_Overlay_HoverBG%22:%22rgba%28199, 132, 0, 0.3%29%22,%22_sap_ui_rta_Overlay_ActiveHoverBG%22:%22rgba%2815, 93, 148, 0.2%29%22%7D'); }
