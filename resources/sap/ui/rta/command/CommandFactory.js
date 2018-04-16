@@ -216,7 +216,7 @@ sap.ui.define(['sap/ui/base/ManagedObject', 'sap/ui/dt/ElementUtil', 'sap/ui/dt/
 	 * @extends sap.ui.base.ManagedObject
 	 *
 	 * @author SAP SE
-	 * @version 1.52.10
+	 * @version 1.52.11
 	 *
 	 * @constructor
 	 * @private

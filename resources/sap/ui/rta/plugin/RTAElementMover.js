@@ -39,7 +39,7 @@ function(
 	 * The RTAElementMover is responsible for the RTA specific adaptation of element movements.
 	 *
 	 * @author SAP SE
-	 * @version 1.52.10
+	 * @version 1.52.11
 	 *
 	 * @constructor
 	 * @private
@@ -98,8 +98,8 @@ function(
 	/**
 	 * Check if the element is editable for the move
 	 * @param  {sap.ui.dt.Overlay}  oOverlay The overlay being moved or the aggregation overlay
-	 * @param  {[type]}  oMovedElement The element being moved if the aggregation overlay is present
-	 * @return {Boolean} true if editable
+	 * @param  {boolean} bOnRegistration if embedded, false if not
+	 * @return {boolean} true if editable
 	 */
 	function fnIsValidForMove(oOverlay, bOnRegistration) {
 		var bValid = false,

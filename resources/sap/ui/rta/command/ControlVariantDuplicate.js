@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.BaseCommand
 	 * @author SAP SE
-	 * @version 1.52.10
+	 * @version 1.52.11
 	 * @constructor
 	 * @private
 	 * @since 1.52
@@ -50,7 +50,7 @@ sap.ui.define([
 
 	/**
 	 * @public Triggers the duplication of a variant
-	 * @returns {promise} Returns resolve after execution
+	 * @returns {Promise} Returns resolve after execution
 	 */
 	ControlVariantDuplicate.prototype.execute = function() {
 		var oVariantManagementControl = this.getElement(),
@@ -82,7 +82,7 @@ sap.ui.define([
 
 	/**
 	 * @public Undo logic for the execution
-	 * @returns {promise} Returns resolve after undo
+	 * @returns {Promise} Returns resolve after undo
 	 */
 	ControlVariantDuplicate.prototype.undo = function() {
 		if (this._oVariantChange) {

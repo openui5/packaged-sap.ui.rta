@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.BaseCommand
 	 * @author SAP SE
-	 * @version 1.52.10
+	 * @version 1.52.11
 	 * @constructor
 	 * @private
 	 * @since 1.50
@@ -49,7 +49,7 @@ sap.ui.define([
 
 	/**
 	 * @public Template Method to implement execute logic, with ensure precondition Element is available
-	 * @returns {promise} Returns resolve after execution
+	 * @returns {Promise} Returns resolve after execution
 	 */
 	ControlVariantSwitch.prototype.execute = function() {
 		var oElement = this.getElement(),
@@ -63,7 +63,7 @@ sap.ui.define([
 
 	/**
 	 * @public Template Method to implement undo logic
-	 * @returns {promise} Returns resolve after undo
+	 * @returns {Promise} Returns resolve after undo
 	 */
 	ControlVariantSwitch.prototype.undo = function() {
 		var sOldVariantReference = this.getSourceVariantReference();
@@ -72,7 +72,7 @@ sap.ui.define([
 
 	/**
 	 * @private Update variant for the underlying model
-	 * @returns {promise} Returns promise resolve
+	 * @returns {Promise} Returns promise resolve
 	 */
 	ControlVariantSwitch.prototype._updateModelVariant = function (sVariantReference) {
 		if (this.getTargetVariantReference() !== this.getSourceVariantReference()) {

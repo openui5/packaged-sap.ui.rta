@@ -101,7 +101,7 @@ sap.ui.define([
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.52.10
+	 * @version 1.52.11
 	 * @constructor
 	 * @private
 	 * @since 1.30
@@ -1189,7 +1189,7 @@ sap.ui.define([
 	 * Function to handle modification of an element
 	 *
 	 * @param {sap.ui.base.Event} oEvent Event object
-	 * @returns {promise} Returns promise that resolves after command was executed sucessfully
+	 * @returns {Promise} Returns promise that resolves after command was executed sucessfully
 	 * @private
 	 */
 	RuntimeAuthoring.prototype._handleElementModified = function(oEvent) {
