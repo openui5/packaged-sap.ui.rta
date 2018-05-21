@@ -27,7 +27,7 @@ sap.ui.define([
 	 * @class The ControlVariant allows propagation of variantManagement key
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.52.12
+	 * @version 1.52.13
 	 * @constructor
 	 * @private
 	 * @since 1.50

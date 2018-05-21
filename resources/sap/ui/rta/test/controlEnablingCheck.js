@@ -53,7 +53,7 @@ function(
 	 * E.g. <code>controlEnablingCheck.only("Remove");<\code>
 	 *
 	 * @author SAP SE
-	 * @version 1.52.12
+	 * @version 1.52.13
 	 *
 	 * @static
 	 * @since 1.42
