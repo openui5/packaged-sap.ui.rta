@@ -168,7 +168,7 @@ sap.ui.define([
 	 * @class The plugin allows to add additional elements that exist either hidden in the UI or in the OData service
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.56.0
+	 * @version 1.56.1
 	 * @constructor
 	 * @private
 	 * @since 1.44
@@ -539,7 +539,7 @@ sap.ui.define([
 		},
 
 		_createRevealCommandForInvisible: function(oSelectedElement, mActions, mParents, oSiblingElement) {
-			var oRevealedElement = oSelectedElement.element;
+			var oRevealedElement = ElementUtil.getElementInstance(oSelectedElement.elementId);
 			var oRevealedElementOverlay = OverlayRegistry.getOverlay(oRevealedElement);
 			var sType = oRevealedElement.getMetadata().getName();
 			var mType = mActions.reveal.types[sType];
@@ -569,7 +569,7 @@ sap.ui.define([
 		},
 
 		_createMoveCommandForInvisible: function(oSelectedElement, mActions, mParents, oSiblingElement, iIndex) {
-			var oRevealedElement = oSelectedElement.element;
+			var oRevealedElement = ElementUtil.getElementInstance(oSelectedElement.elementId);
 			var oRevealedElementOverlay = OverlayRegistry.getOverlay(oRevealedElement);
 			var sType = oRevealedElement.getMetadata().getName();
 			var sParentAggregationName;

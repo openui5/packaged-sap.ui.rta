@@ -128,6 +128,28 @@ function(
 				developerMode: false
 			});
 		});
+
+		QUnit.test("when getting a property change command for button with a static call to getCommandFor,", function(assert) {
+			var oFlexSettings = {
+				layer: "VENDOR",
+				developerMode: true,
+				scenario: sap.ui.fl.Scenario.AppVariant,
+				projectId: "projectId",
+				baseId: "baseId"
+			};
+
+			var oPrepareStub = sandbox.stub(FlexCommand.prototype, "prepare");
+
+			CommandFactory.getCommandFor(this.oButton, "property", {
+				propertyName : "visible",
+				oldValue : this.oButton.getVisible(),
+				newValue : false
+			}, null, oFlexSettings);
+
+			assert.equal(oPrepareStub.callCount, 1, "the _getCommandFor method was called");
+			assert.ok(oPrepareStub.lastCall.args[0].namespace, "and the namespace got added to the flexSettings");
+			assert.ok(oPrepareStub.lastCall.args[0].rootNamespace, "and the rootNamespace got added to the flexSettings");
+		});
 	});
 
 	QUnit.module("Given a flex command", {
@@ -223,18 +245,35 @@ function(
 		});
 
 		QUnit.test("when calling pushAndExecute with an failing command as the only command", function(assert) {
-			var done = assert.async();
+			assert.expect(4);
 			var fnStackModifiedSpy = sinon.spy();
 			this.stack.attachModified(fnStackModifiedSpy);
-			this.stack.pushAndExecute(this.failingCommand)
+			return this.stack.pushAndExecute(this.failingCommand)
 
 			.catch(function(oError) {
 				assert.ok(this.stack.isEmpty(), "and the command stack is still empty");
-				assert.strictEqual(oError, ERROR_INTENTIONALLY, " an error is rejected and catched");
+				assert.strictEqual(oError, ERROR_INTENTIONALLY, "an error is rejected and catched");
+				assert.strictEqual(oError.command, this.failingCommand, "and the command is part of the error");
 				assert.equal(fnStackModifiedSpy.callCount, 2, " the modify stack listener is called twice, onence for push and once for pop");
-				setTimeout(function() {
-					done();
-				}, 0);
+			}.bind(this));
+		});
+
+		QUnit.test("when calling pushAndExecute with an failing command as the only command and no error is passed", function(assert) {
+			assert.expect(5);
+			var fnStackModifiedSpy = sinon.spy();
+			this.stack.attachModified(fnStackModifiedSpy);
+			this.failingCommand.execute = function(oElement) {
+				return Promise.reject();
+			};
+			var oStandardError = new Error("Executing of the change failed.");
+			return this.stack.pushAndExecute(this.failingCommand)
+
+			.catch(function(oError) {
+				assert.ok(this.stack.isEmpty(), "and the command stack is still empty");
+				assert.equal(oError.message, oStandardError.message, "an error is rejected and catched");
+				assert.strictEqual(oError.command, this.failingCommand, "and the command is part of the error");
+				assert.equal(oError.index, 0, "and the index is part of the error");
+				assert.equal(fnStackModifiedSpy.callCount, 2, " the modify stack listener is called twice, onence for push and once for pop");
 			}.bind(this));
 		});
 
@@ -286,6 +325,10 @@ function(
 
 	QUnit.module("Given a property command", {
 		beforeEach : function(assert) {
+			var oFlexSettings = {
+				developerMode: true,
+				layer: "VENDOR"
+			};
 			sandbox.stub(FlexUtils, "getAppComponentForControl").returns(oMockedAppComponent);
 			this.OLD_VALUE = '2px';
 			this.NEW_VALUE = '5px';
@@ -297,12 +340,12 @@ function(
 				newValue : this.NEW_VALUE,
 				oldValue : this.OLD_VALUE,
 				semanticMeaning : "resize"
-			});
+			}, null, oFlexSettings);
 			this.oPropertyCommandWithOutOldValueSet = CommandFactory.getCommandFor(this.oControl, "Property", {
 				propertyName : "width",
 				newValue : this.NEW_VALUE,
 				semanticMeaning : "resize"
-			});
+			}, null, oFlexSettings);
 			this.fnApplyChangeSpy = sandbox.spy(FlexCommand.prototype, "_applyChange");
 		},
 		afterEach : function(assert) {
@@ -336,6 +379,10 @@ function(
 
 	QUnit.module("Given a bind property command", {
 		beforeEach : function(assert) {
+			var oFlexSettings = {
+				developerMode: true,
+				layer: "VENDOR"
+			};
 			sandbox.stub(FlexUtils, "getAppComponentForControl").returns(oMockedAppComponent);
 			this.OLD_BOOLEAN_VALUE = false;
 			this.NEW_BOOLEAN_BINDING_WITH_CRITICAL_CHARS = "{= ( ${/field1} === 'critical' ) &&  ( ${/field2} > 100 ) }";
@@ -361,20 +408,20 @@ function(
 			this.oBindShowValueHelpCommand = CommandFactory.getCommandFor(this.oInput, "BindProperty", {
 				propertyName : "showValueHelp",
 				newBinding : this.NEW_BOOLEAN_BINDING_WITH_CRITICAL_CHARS
-			});
+			}, null, oFlexSettings);
 			this.oBindShowValueHelpCommandWithoutOldValueSet = CommandFactory.getCommandFor(this.oInput, "BindProperty", {
 				element : this.oInput,
 				propertyName : "showValueHelp",
 				newBinding : this.NEW_BOOLEAN_BINDING_WITH_CRITICAL_CHARS
-			});
+			}, null, oFlexSettings);
 			this.oBindValuePropertyCommand = CommandFactory.getCommandFor(this.oInput, "BindProperty", {
 				propertyName : "value",
 				newBinding : this.NEW_VALUE_BINDING
-			});
+			}, null, oFlexSettings);
 			this.oBindValuePropertyCommandWithoutOldBindingSet = CommandFactory.getCommandFor(this.oInput, "BindProperty", {
 				propertyName : "value",
 				newBinding : this.NEW_VALUE_BINDING
-			});
+			}, null, oFlexSettings);
 			this.fnApplyChangeSpy = sandbox.spy(FlexCommand.prototype, "_applyChange");
 		},
 		afterEach : function(assert) {
@@ -671,14 +718,16 @@ function(
 				"selector": {
 					"id": "field1",
 					"idIsLocal": true
-				}
+				},
+				support: {}
 			};
 			var oChangeContent2 = {
 					"fileName": "fileName2",
 					"selector": {
 						"id": "field2",
 						"idIsLocal": true
-					}
+					},
+					support: {}
 				};
 			var oChange1 = new Change(oChangeContent1);
 			var oChange2 = new Change(oChangeContent2);
@@ -688,9 +737,9 @@ function(
 			assert.notOk(this.compositeCommand._sCompositeId, "there is no private composite id set initially");
 			this.compositeCommand.insertCommand(this.command4, 0);
 			assert.ok(this.compositeCommand._sCompositeId, "there is a private composite id set after adding the first command");
-			assert.equal(this.command4._oPreparedChange.getDefinition().compositeCommand, this.compositeCommand._sCompositeId, "the id is written to the prepared change");
+			assert.equal(this.command4._oPreparedChange.getDefinition().support.compositeCommand, this.compositeCommand._sCompositeId, "the id is written to the prepared change");
 			this.compositeCommand.insertCommand(this.command5, 0);
-			assert.equal(this.command5._oPreparedChange.getDefinition().compositeCommand, this.compositeCommand._sCompositeId, "the id is written to any further prepared change of an added command");
+			assert.equal(this.command5._oPreparedChange.getDefinition().support.compositeCommand, this.compositeCommand._sCompositeId, "the id is written to any further prepared change of an added command");
 		});
 
 		QUnit.test("when adding a command to a composite command, ", function(assert) {
@@ -699,15 +748,17 @@ function(
 				"selector": {
 					"id": "field1",
 					"idIsLocal": true
-				}
+				},
+				support: {}
 			};
 			var oChangeContent2 = {
-					"fileName": "fileName2",
-					"selector": {
-						"id": "field2",
-						"idIsLocal": true
-					}
-				};
+				"fileName": "fileName2",
+				"selector": {
+					"id": "field2",
+					"idIsLocal": true
+				},
+				support: {}
+			};
 			var oChange1 = new Change(oChangeContent1);
 			var oChange2 = new Change(oChangeContent2);
 			this.command4._oPreparedChange = oChange1;
@@ -716,9 +767,9 @@ function(
 			assert.notOk(this.compositeCommand._sCompositeId, "there is no private composite id set initially");
 			this.compositeCommand.addCommand(this.command4);
 			assert.ok(this.compositeCommand._sCompositeId, "there is a private composite id set after adding the first command");
-			assert.equal(this.command4._oPreparedChange.getDefinition().compositeCommand, this.compositeCommand._sCompositeId, "the id is written to the prepared change");
+			assert.equal(this.command4._oPreparedChange.getDefinition().support.compositeCommand, this.compositeCommand._sCompositeId, "the id is written to the prepared change");
 			this.compositeCommand.addCommand(this.command5);
-			assert.equal(this.command5._oPreparedChange.getDefinition().compositeCommand, this.compositeCommand._sCompositeId, "the id is written to any further prepared change of an added command");
+			assert.equal(this.command5._oPreparedChange.getDefinition().support.compositeCommand, this.compositeCommand._sCompositeId, "the id is written to any further prepared change of an added command");
 		});
 
 		QUnit.test("After adding commands to composite command, when executing the composite and undoing it", function(assert) {

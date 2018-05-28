@@ -26,7 +26,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.56.0
+	 * @version 1.56.1
 	 * @constructor
 	 * @private
 	 * @since 1.34
@@ -94,7 +94,7 @@ sap.ui.define([
 						oChange.resetUndoOperations();
 					}
 					// check if change belongs to a composite command
-					var sCompositeId = oChange.getDefinition().compositeCommand;
+					var sCompositeId = oChange.getDefinition().support.compositeCommand;
 					if (sCompositeId) {
 						if (!mComposite[sCompositeId]) {
 							mComposite[sCompositeId] = new CompositeCommand();
@@ -190,13 +190,14 @@ sap.ui.define([
 				}.bind(this))
 
 				.catch(function(oError) {
-					this.pop(); // remove failing command
+					oError = oError || new Error("Executing of the change failed.");
+					oError.index = this._toBeExecuted;
+					oError.command = this.pop(); // remove failing command
 					return Promise.reject(oError);
 				}.bind(this));
 			}
 		}.bind(this));
 		return this._oLastCommand;
-
 	};
 
 	Stack.prototype._unExecute = function() {
