@@ -12,7 +12,7 @@ sap.ui.define(['sap/ui/rta/command/FlexCommand'], function(FlexCommand) {
 	 * @class
 	 * @extends sap.ui.rta.command.FlexCommand
 	 * @author SAP SE
-	 * @version 1.52.13
+	 * @version 1.52.14
 	 * @constructor
 	 * @private
 	 * @since 1.42
