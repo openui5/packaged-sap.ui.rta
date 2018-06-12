@@ -19,13 +19,12 @@ function(
 	 *
 	 * @extends sap.ui.core.EventBus
 	 * @author SAP SE
-	 * @version 1.56.1
-	 * @public
+	 * @version 1.56.2
+	 * @private
 	 * @since 1.56.0
 	 * @alias sap.ui.rta.util.ServiceEventBus
 	 */
-	var ServiceEventBus = EventBus.extend("sap.ui.rta.util.ServiceEventBus", {
-	});
+	var ServiceEventBus = EventBus.extend("sap.ui.rta.util.ServiceEventBus");
 
 
 	ServiceEventBus.prototype._callListener = function (fnCallback, oListener, sChannelId, sEventId, vData) {

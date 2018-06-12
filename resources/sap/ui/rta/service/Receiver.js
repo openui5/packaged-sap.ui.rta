@@ -15,6 +15,7 @@ sap.ui.define([
 ) {
 	"use strict";
 
+	var CHANNEL_ID = 'sap.ui.rta.service.receiver';
 	var oPostMessageBus;
 
 	return function (oRta) {
@@ -44,7 +45,7 @@ sap.ui.define([
 						oPostMessageBus.publish({
 							target: oEvent.source,
 							origin: oEvent.origin,
-							channelId: "sap.ui.rta.services.receiver",
+							channelId: CHANNEL_ID,
 							eventId: "getService",
 							data: {
 								id: mData.id,
@@ -52,7 +53,7 @@ sap.ui.define([
 								body: {
 									methods: aMethods,
 									properties: mProperties,
-									events: oRta._mServices[sServiceName].service.events || []
+									events: oRta._mServices[sServiceName].service.events
 								}
 							}
 						});
@@ -66,7 +67,7 @@ sap.ui.define([
 									oPostMessageBus.publish({
 										target: oEvent.source,
 										origin: oEvent.origin,
-										channelId: 'sap.ui.rta.services.receiver',
+										channelId: CHANNEL_ID,
 										eventId: 'callMethod',
 										data: {
 											type: 'response',
@@ -80,7 +81,7 @@ sap.ui.define([
 						.catch(function (vError) {
 							var oError = DtUtil.propagateError(
 								vError,
-								"services.Receiver",
+								"service.Receiver",
 								DtUtil.printf("Can't execute method {0} of service {1} due unexpected error.", mRequestBody.method, mRequestBody.service),
 								"sap.ui.rta"
 							);
@@ -88,7 +89,7 @@ sap.ui.define([
 							oPostMessageBus.publish({
 								target: oEvent.source,
 								origin: oEvent.origin,
-								channelId: "sap.ui.rta.services.receiver",
+								channelId: CHANNEL_ID,
 								eventId: "callMethod",
 								data: {
 									type: "response",
@@ -106,10 +107,9 @@ sap.ui.define([
 								oPostMessageBus.publish({
 									target: oEvent.source,
 									origin: oEvent.origin,
-									channelId: 'sap.ui.rta.services.receiver',
+									channelId: CHANNEL_ID,
 									eventId: 'event',
 									data: {
-										type: 'push',
 										body: {
 											service: mRequestBody.service,
 											event: mRequestBody.event,
@@ -124,7 +124,7 @@ sap.ui.define([
 							oPostMessageBus.publish({
 								target: oEvent.source,
 								origin: oEvent.origin,
-								channelId: 'sap.ui.rta.services.receiver',
+								channelId: CHANNEL_ID,
 								eventId: 'subscribe',
 								data: {
 									type: 'response',
@@ -145,7 +145,7 @@ sap.ui.define([
 							oPostMessageBus.publish({
 								target: oEvent.source,
 								origin: oEvent.origin,
-								channelId: 'sap.ui.rta.services.receiver',
+								channelId: CHANNEL_ID,
 								eventId: 'unsubscribe',
 								data: {
 									type: 'response',
@@ -155,29 +155,30 @@ sap.ui.define([
 							});
 						});
 					break;
+				// no default
 			}
 		};
 
 		oRta.attachEventOnce("start", function () {
 			oPostMessageBus = PostMessageBus.getInstance();
 			oPostMessageBus.publish({
-				channelId: "sap.ui.rta.services.receiver",
+				channelId: CHANNEL_ID,
 				eventId: PostMessageBus.event.READY
 			});
 
-			oPostMessageBus.subscribe("sap.ui.rta.services.receiver", "getService", fnReceiver);
-			oPostMessageBus.subscribe("sap.ui.rta.services.receiver", "callMethod", fnReceiver);
-			oPostMessageBus.subscribe("sap.ui.rta.services.receiver", "subscribe", fnReceiver);
-			oPostMessageBus.subscribe("sap.ui.rta.services.receiver", "unsubscribe", fnReceiver);
+			oPostMessageBus.subscribe(CHANNEL_ID, "getService", fnReceiver);
+			oPostMessageBus.subscribe(CHANNEL_ID, "callMethod", fnReceiver);
+			oPostMessageBus.subscribe(CHANNEL_ID, "subscribe", fnReceiver);
+			oPostMessageBus.subscribe(CHANNEL_ID, "unsubscribe", fnReceiver);
 		});
 
 		return {
 			destroy: function () {
 				if (oPostMessageBus) {
-					oPostMessageBus.unsubscribe("sap.ui.rta.services.receiver", "getService", fnReceiver);
-					oPostMessageBus.unsubscribe("sap.ui.rta.services.receiver", "callMethod", fnReceiver);
-					oPostMessageBus.unsubscribe("sap.ui.rta.services.receiver", "subscribe", fnReceiver);
-					oPostMessageBus.unsubscribe("sap.ui.rta.services.receiver", "unsubscribe", fnReceiver);
+					oPostMessageBus.unsubscribe(CHANNEL_ID, "getService", fnReceiver);
+					oPostMessageBus.unsubscribe(CHANNEL_ID, "callMethod", fnReceiver);
+					oPostMessageBus.unsubscribe(CHANNEL_ID, "subscribe", fnReceiver);
+					oPostMessageBus.unsubscribe(CHANNEL_ID, "unsubscribe", fnReceiver);
 				}
 			}
 		};

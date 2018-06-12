@@ -25,7 +25,7 @@ sap.ui.define([
 	 * @extends sap.ui.rta.command.BaseCommand
 	 *
 	 * @author SAP SE
-	 * @version 1.56.1
+	 * @version 1.56.2
 	 *
 	 * @constructor
 	 * @private
@@ -229,7 +229,7 @@ sap.ui.define([
 		var oFlexController = FlexControllerFactory.createForControl(oAppComponent);
 		var bRevertible = oFlexController.isChangeHandlerRevertible(oChange, oSelectorElement);
 		var mPropertyBag = {
-			modifier: RtaControlTreeModifier,
+			modifier: bRevertible ? JsControlTreeModifier : RtaControlTreeModifier,
 			appComponent: oAppComponent,
 			view: Utils.getViewForControl(oSelectorElement)
 		};
