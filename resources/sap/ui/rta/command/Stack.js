@@ -26,7 +26,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.56.2
+	 * @version 1.56.3
 	 * @constructor
 	 * @private
 	 * @since 1.34
@@ -65,6 +65,7 @@ sap.ui.define([
 	 */
 	Stack.initializeWithChanges = function(oControl, aFileNames) {
 		var oStack = new Stack();
+		oStack._aPersistedChanges = aFileNames;
 		var mComposite = {};
 		if (aFileNames && aFileNames.length > 0) {
 			var oChangePersistence = ChangePersistenceFactory.getChangePersistenceForControl(oControl);
@@ -192,7 +193,8 @@ sap.ui.define([
 				.catch(function(oError) {
 					oError = oError || new Error("Executing of the change failed.");
 					oError.index = this._toBeExecuted;
-					oError.command = this.pop(); // remove failing command
+					oError.command = this.removeCommand(this._toBeExecuted); // remove failing command
+					this._toBeExecuted--;
 					return Promise.reject(oError);
 				}.bind(this));
 			}

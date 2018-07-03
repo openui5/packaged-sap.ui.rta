@@ -14,7 +14,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.FlexCommand
 	 * @author SAP SE
-	 * @version 1.56.2
+	 * @version 1.56.3
 	 * @constructor
 	 * @private
 	 * @since 1.44

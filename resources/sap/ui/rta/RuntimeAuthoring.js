@@ -106,7 +106,7 @@ sap.ui.define([
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.56.2
+	 * @version 1.56.3
 	 * @constructor
 	 * @private
 	 * @since 1.30

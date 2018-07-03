@@ -25,7 +25,7 @@ sap.ui.define([
 	 * @extends sap.ui.rta.command.BaseCommand
 	 *
 	 * @author SAP SE
-	 * @version 1.56.2
+	 * @version 1.56.3
 	 *
 	 * @constructor
 	 * @private
@@ -240,16 +240,16 @@ sap.ui.define([
 
 		return Promise.resolve(oFlexController.checkTargetAndApplyChange(oChange, oSelectorElement, mPropertyBag))
 
-		.then(function(bSuccess) {
-			if (bSuccess) {
+		.then(function(oResult) {
+			if (oResult.success) {
 				if (bNotMarkAsAppliedChange) {
 					oFlexController.removeFromAppliedChangesOnControl(oChange, oAppComponent, oSelectorElement);
 				}
 			}
-			return bSuccess;
+			return oResult;
 		})
 
-		.then(function(bSuccess) {
+		.then(function(oResult) {
 			if (!bRevertible){
 				if (!oChange.getUndoOperations()) {
 					this._aRecordedUndo = RtaControlTreeModifier.stopRecordingUndo();
@@ -258,8 +258,8 @@ sap.ui.define([
 					oChange.resetUndoOperations();
 				}
 			}
-			if (!bSuccess) {
-				return Promise.reject();
+			if (!oResult.success) {
+				return Promise.reject(oResult.error);
 			}
 		}.bind(this));
 	};
