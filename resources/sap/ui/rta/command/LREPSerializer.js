@@ -33,7 +33,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.56.3
+	 * @version 1.56.4
 	 * @constructor
 	 * @private
 	 * @since 1.42
@@ -65,19 +65,25 @@ sap.ui.define([
 	LREPSerializer.prototype._lastPromise = Promise.resolve();
 
 	LREPSerializer.prototype.setCommandStack = function(oCommandStack) {
+		if (this.getCommandStack()){
+			this.getCommandStack().removeCommandExecutionHandler(this._fnHandleCommandExecuted);
+		}
 		this.setProperty("commandStack", oCommandStack);
-		oCommandStack.attachCommandExecuted(function(oEvent) {
-			this.handleCommandExecuted(oEvent);
-		}.bind(this));
+		oCommandStack.addCommandExecutionHandler(this._fnHandleCommandExecuted);
 	};
-
+	LREPSerializer.prototype.init = function(){
+		this._fnHandleCommandExecuted = this.handleCommandExecuted.bind(this);
+	};
+	LREPSerializer.prototype.exit = function(){
+		this.getCommandStack().removeCommandExecutionHandler(this._fnHandleCommandExecuted);
+	};
 	LREPSerializer.prototype._isPersistedChange = function(oPreparedChange) {
 		return !!this.getCommandStack()._aPersistedChanges && this.getCommandStack()._aPersistedChanges.indexOf(oPreparedChange.getId()) !== -1;
 	};
 
 	LREPSerializer.prototype.handleCommandExecuted = function(oEvent) {
-		(function (oEvent) {
-			var oParams = oEvent.getParameters();
+		return (function (oEvent) {
+			var oParams = oEvent;
 			this._lastPromise = this._lastPromise.catch(function() {
 				// _lastPromise chain must not be interrupted
 			}).then(function() {
@@ -131,6 +137,7 @@ sap.ui.define([
 					return Promise.all(aDescriptorCreateAndAdd);
 				}
 			}.bind(this));
+			return this._lastPromise;
 		}.bind(this))(oEvent);
 	};
 
@@ -257,7 +264,7 @@ sap.ui.define([
 			}
 		});
 
-		// Once the changes are undoed, all commands shall be removed
+		// Once the changes are undone, all commands shall be removed
 		oCommandStack.removeAllCommands();
 	};
 

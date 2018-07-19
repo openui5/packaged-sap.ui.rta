@@ -47,7 +47,8 @@ sap.ui.define([
 		"sap/ui/rta/appVariant/Feature",
 		"sap/ui/Device",
 		"sap/ui/rta/service/index",
-		"sap/ui/rta/util/ServiceEventBus"
+		"sap/ui/rta/util/ServiceEventBus",
+		"sap/ui/dt/OverlayRegistry"
 	],
 	function(
 		jQuery,
@@ -91,7 +92,8 @@ sap.ui.define([
 		RtaAppVariantFeature,
 		Device,
 		ServicesIndex,
-		ServiceEventBus
+		ServiceEventBus,
+		OverlayRegistry
 	) {
 	"use strict";
 
@@ -106,7 +108,7 @@ sap.ui.define([
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.56.3
+	 * @version 1.56.4
 	 * @constructor
 	 * @private
 	 * @since 1.30
@@ -643,7 +645,14 @@ sap.ui.define([
 
 	var fnShowTechnicalError = function(vError) {
 		BusyIndicator.hide();
-		var sErrorMessage = vError.stack || vError.message || vError.status || vError;
+		var sErrorMessage = "";
+		if (vError.messages && Array.isArray(vError.messages)) {
+			for (var i = 0; i < vError.messages.length; i++) {
+				sErrorMessage = (vError.messages[i].severity === "Error") ? sErrorMessage + vError.messages[i].text + "\n" : sErrorMessage;
+			}
+		} else {
+			sErrorMessage = vError.stack || vError.message || vError.status || vError;
+		}
 		var oTextResources = sap.ui.getCore().getLibraryResourceBundle("sap.ui.rta");
 		jQuery.sap.log.error("Failed to transfer runtime adaptation changes to layered repository", sErrorMessage);
 		var sMsg = oTextResources.getText("MSG_LREP_TRANSFER_ERROR") + "\n"
@@ -1117,11 +1126,15 @@ sap.ui.define([
 	 * @param {object} vAction       The create action from designtime metadata
 	 * @param {string} sNewControlID The id of the newly created container
 	 */
-	RuntimeAuthoring.prototype._setRenameOnCreatedContainer = function(vAction, sNewControlID) {
+	RuntimeAuthoring.prototype._scheduleRenameOnCreatedContainer = function(vAction, sNewControlID) {
 		var fnStartEdit = function (oElementOverlay) {
-			oElementOverlay.setSelected(true);
-			this.getPlugins()["rename"].startEdit(oElementOverlay);
+			// get container of the new control for rename
+			var sNewContainerID = this.getPlugins()["createContainer"].getCreatedContainerId(vAction, oElementOverlay.getElement().getId());
+			var oContainerElementOverlay = OverlayRegistry.getOverlay(sNewContainerID);
+			oContainerElementOverlay.setSelected(true);
+			this.getPlugins()["rename"].startEdit(oContainerElementOverlay);
 		};
+
 		var fnGeometryChangedCallback = function(oEvent) {
 			var oElementOverlay = oEvent.getSource();
 			if (oElementOverlay.getGeometry() && oElementOverlay.getGeometry().visible) {
@@ -1141,15 +1154,17 @@ sap.ui.define([
 			}
 			oNewOverlay.detachEvent('afterRendering', fnOverlayRenderedCallback, this);
 		};
-		var sNewContainerID = this.getPlugins()["createContainer"].getCreatedContainerId(vAction, sNewControlID);
 
-		this._oDesignTime.attachEvent("elementOverlayCreated", function(oEvent){
+		var fnElementOverlayCreatedCallback = function(oEvent){
 			var oNewOverlay = oEvent.getParameter("elementOverlay");
-			if (oNewOverlay.getElement().getId() === sNewContainerID) {
+			if (oNewOverlay.getElement().getId() === sNewControlID) {
+				this._oDesignTime.detachEvent("elementOverlayCreated", fnElementOverlayCreatedCallback, this);
 				// the overlay needs to be rendered before we can trigger the rename on it
 				oNewOverlay.attachEvent('afterRendering', fnOverlayRenderedCallback, this);
 			}
-		}.bind(this));
+		};
+
+		this._oDesignTime.attachEvent("elementOverlayCreated", fnElementOverlayCreatedCallback, this);
 	};
 
 	/**
@@ -1167,12 +1182,10 @@ sap.ui.define([
 
 		var oCommand = oEvent.getParameter("command");
 		if (oCommand instanceof sap.ui.rta.command.BaseCommand) {
-			return this.getCommandStack().pushAndExecute(oCommand).then(function(){
-				if (vAction && sNewControlID){
-					this._setRenameOnCreatedContainer(vAction, sNewControlID);
-				}
-			}.bind(this))
-
+			if (vAction && sNewControlID){
+				this._scheduleRenameOnCreatedContainer(vAction, sNewControlID);
+			}
+			return this.getCommandStack().pushAndExecute(oCommand)
 			// Error handling when a command fails is done in the Stack
 			.catch(function(oError) {
 				throw new Error(oError);

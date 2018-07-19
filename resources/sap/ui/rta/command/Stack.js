@@ -26,7 +26,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.56.3
+	 * @version 1.56.4
 	 * @constructor
 	 * @private
 	 * @since 1.34
@@ -113,8 +113,31 @@ sap.ui.define([
 		}
 	};
 
-	Stack.prototype._toBeExecuted = -1;
-	Stack.prototype._oLastCommand = Promise.resolve();
+	/**
+	* @param {function} fnHandler Handler are called when commands are executed or undone. They get parameter
+	* like the commandExecuted event and the stack will wait for any processing
+	* until they are done.
+	*/
+	Stack.prototype.addCommandExecutionHandler = function(fnHandler) {
+		this._aCommandExecutionHandler.push(fnHandler);
+	};
+	Stack.prototype.removeCommandExecutionHandler = function(fnHandler) {
+		var i = this._aCommandExecutionHandler.indexOf(fnHandler);
+		if (i > -1) {
+			this._aCommandExecutionHandler.splice(i, 1);
+		}
+	};
+	Stack.prototype.init = function(){
+		this._aCommandExecutionHandler = [];
+		this._toBeExecuted = -1;
+		this._oLastCommand = Promise.resolve();
+	};
+
+	Stack.prototype._waitForCommandExecutionHandler = function(mParam){
+		return Promise.all(this._aCommandExecutionHandler.map(function(fnHandler){
+			return fnHandler(mParam);
+		}));
+	};
 
 	Stack.prototype._getCommandToBeExecuted = function() {
 		return this.getCommands()[this._toBeExecuted];
@@ -183,11 +206,13 @@ sap.ui.define([
 
 				.then(function(){
 					this._toBeExecuted--;
-					this.fireCommandExecuted({
+					var mParam = {
 						command: oCommand,
 						undo: false
-					});
+					};
+					this.fireCommandExecuted(mParam);
 					this.fireModified();
+					return this._waitForCommandExecutionHandler(mParam);
 				}.bind(this))
 
 				.catch(function(oError) {
@@ -211,11 +236,13 @@ sap.ui.define([
 				return oCommand.undo()
 
 				.then(function() {
-					this.fireCommandExecuted({
+					var mParam = {
 						command: oCommand,
 						undo: true
-					});
+					};
+					this.fireCommandExecuted(mParam);
 					this.fireModified();
+					return this._waitForCommandExecutionHandler(mParam);
 				}.bind(this));
 			} else {
 				return Promise.resolve();
