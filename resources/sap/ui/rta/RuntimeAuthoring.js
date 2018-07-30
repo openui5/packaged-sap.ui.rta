@@ -108,7 +108,7 @@ sap.ui.define([
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.56.4
+	 * @version 1.56.5
 	 * @constructor
 	 * @private
 	 * @since 1.30
@@ -883,7 +883,7 @@ sap.ui.define([
 				this.addDependent(new fnConstructor({
 					textResources: this._getTextResources(),
 					//events
-					exit: this.stop.bind(this, false, false),
+					exit: this.stop.bind(this, false, true),
 					restore: this._onRestore.bind(this)
 				}), 'toolbar');
 			} else {

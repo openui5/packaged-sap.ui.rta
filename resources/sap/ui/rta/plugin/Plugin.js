@@ -39,7 +39,7 @@ function(
 	 * @extends sap.ui.dt.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.56.4
+	 * @version 1.56.5
 	 *
 	 * @constructor
 	 * @private
