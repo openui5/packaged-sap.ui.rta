@@ -39,7 +39,7 @@ sap.ui.define([
 	 * @extends sap.ui.rta.plugin.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.56.6
 	 *
 	 * @constructor
 	 * @private
@@ -175,7 +175,8 @@ sap.ui.define([
 			if (oRenameAction.changeOnRelevantContainer) {
 				oElement = oOverlay.getRelevantContainer();
 			}
-			bEditable = this.hasChangeHandler(oRenameAction.changeType, oElement);
+			bEditable = this.hasChangeHandler(oRenameAction.changeType, oElement) &&
+						this._checkRelevantContainerStableID(oRenameAction, oOverlay);
 		}
 
 		if (bEditable) {

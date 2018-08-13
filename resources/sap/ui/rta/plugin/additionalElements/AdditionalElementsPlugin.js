@@ -168,7 +168,7 @@ sap.ui.define([
 	 * @class The plugin allows to add additional elements that exist either hidden in the UI or in the OData service
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.56.5
+	 * @version 1.56.6
 	 * @constructor
 	 * @private
 	 * @since 1.44
@@ -205,7 +205,7 @@ sap.ui.define([
 			var bIsEnabled;
 			if (bOverlayIsSibling) {
 				oParentOverlay = oOverlay.getParentElementOverlay();
-				if (oParentOverlay && this.hasStableId(oParentOverlay)) {
+				if (oParentOverlay) {
 					bIsEnabled = true;
 				} else {
 					bIsEnabled = false;
@@ -271,7 +271,8 @@ sap.ui.define([
 								if (mRevealAction.changeOnRelevantContainer) {
 									oElement = oOverlay.getRelevantContainer();
 								}
-								if (this.hasChangeHandler(mRevealAction.changeType, oElement)) {
+								if (this.hasChangeHandler(mRevealAction.changeType, oElement) &&
+									this._checkRelevantContainerStableID(mRevealAction, oOverlay)) {
 									if (!mRevealAction.getAggregationName){
 										mRevealAction.getAggregationName = _defaultGetAggregationName;
 									}
@@ -318,7 +319,12 @@ sap.ui.define([
 					if (mAction.changeOnRelevantContainer){
 						oCheckElement = mParents.relevantContainer;
 					}
-					if (mAction.changeType && this.hasChangeHandler(mAction.changeType, oCheckElement)) {
+					var oCheckElementOverlay = OverlayRegistry.getOverlay(oCheckElement);
+					if (
+						mAction.changeType &&
+						this.hasChangeHandler(mAction.changeType, oCheckElement) &&
+						this.hasStableId(oCheckElementOverlay)
+					){
 						_mAddODataProperty[mAction.aggregation] = {
 							addODataProperty : {
 								designTimeMetadata : oDesignTimeMetadata,
@@ -642,7 +648,8 @@ sap.ui.define([
 
 			if (mActions.addODataProperty) {
 				var oAddODataPropertyAction = mActions.addODataProperty.action;
-				bEditable = oAddODataPropertyAction && oAddODataPropertyAction.aggregation === oOverlay.getParentAggregationOverlay().getAggregationName();
+				bEditable = oAddODataPropertyAction &&
+							oAddODataPropertyAction.aggregation === oOverlay.getParentAggregationOverlay().getAggregationName();
 			}
 
 			if (!bEditable && mActions.reveal) {
