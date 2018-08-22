@@ -24,7 +24,7 @@ sap.ui.define([
 	 * @class The CreateContainer allows trigger CreateContainer operations on the overlay
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.56.6
+	 * @version 1.56.7
 	 * @constructor
 	 * @private
 	 * @since 1.34

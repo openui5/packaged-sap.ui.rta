@@ -29,7 +29,7 @@ sap.ui.define([
 	 * @class The ControlVariant allows propagation of variantManagement key
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.56.6
+	 * @version 1.56.7
 	 * @constructor
 	 * @private
 	 * @since 1.50
@@ -427,9 +427,11 @@ sap.ui.define([
 
 		//Close valueStateMessage
 		if (this._oValueStateMessage) {
-			this._oValueStateMessage.getPopup().attachClosed(function() {
+			this._oValueStateMessage.getPopup().attachEventOnce("closed", function() {
 				oRenamedElement.$().css("z-index", 1);
-			});
+				this._oValueStateMessage.destroy();
+				delete this._oValueStateMessage;
+			}, this);
 			this._oValueStateMessage.close();
 		}
 
@@ -468,32 +470,41 @@ sap.ui.define([
 			this.fireElementModified({
 				"command": oCommand
 			});
-			return oCommand;
+			return Promise.resolve(oCommand);
 		} else {
 			jQuery.sap.log.info("Control Variant title unchanged");
+			return Promise.resolve();
 		}
 
 
 		if (sErrorText) {
+			// Order of calling:
+			// -> Open message box
+			// 		-> Close message box
+			// 			-> Stop edit on overlay
+			// 				-> Show value state message
+			// 					-> Start edit on overlay
 			var sValueStateText = oResourceBundle.getText(sErrorText);
 			this._prepareOverlayForValueState(oOverlay, sValueStateText);
 
 			//Border
 			oOverlay.addStyleClass("sapUiRtaErrorBg");
 
-			Utils._showMessageBox("ERROR", "BLANK_DUPLICATE_TITLE_TEXT", sErrorText)
+			return Promise.resolve(Utils._showMessageBox("ERROR", "BLANK_DUPLICATE_TITLE_TEXT", sErrorText)
 				.then(function () {
-					//valueStateMessage
-					if (!this._oValueStateMessage) {
+					var fnErrorHandler = function() {
+						//valueStateMessage
 						this._oValueStateMessage = new ValueStateMessage(oOverlay);
-						this._oValueStateMessage.getPopup()._deactivateFocusHandle();
-					}
-					this._oValueStateMessage.open();
-
-					this.startEdit(oOverlay);
-				}.bind(this));
+						this._oValueStateMessage.getPopup().attachEventOnce("opened", function (oEvent) {
+							oEvent.getSource()._deactivateFocusHandle();
+						});
+						this._oValueStateMessage.open();
+						this.startEdit(oOverlay);
+					}.bind(this);
+					return fnErrorHandler;
+				}.bind(this))
+			);
 		}
-
 	};
 
 	/**
