@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.BaseCommand
 	 * @author SAP SE
-	 * @version 1.58.0
+	 * @version 1.58.1
 	 * @constructor
 	 * @private
 	 * @since 1.52
@@ -59,7 +59,8 @@ sap.ui.define([
 	};
 
 	/**
-	 * @public Triggers the duplication of a variant
+	 * Triggers the duplication of a variant.
+	 * @public
 	 * @returns {Promise} Returns resolve after execution
 	 */
 	ControlVariantDuplicate.prototype.execute = function() {
@@ -94,7 +95,8 @@ sap.ui.define([
 	};
 
 	/**
-	 * @public Undo logic for the execution
+	 * Undo logic for the execution.
+	 * @public
 	 * @returns {Promise} Returns resolve after undo
 	 */
 	ControlVariantDuplicate.prototype.undo = function() {

@@ -122,7 +122,7 @@ function(
 	 * @class The runtime authoring allows to adapt the fields of a running application.
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.58.0
+	 * @version 1.58.1
 	 * @constructor
 	 * @private
 	 * @since 1.30
@@ -614,7 +614,6 @@ function(
 							var bShowPublish = aButtonsSupport[0];
 							var bIsAppVariantSupported = aButtonsSupport[1];
 							this._createToolsMenu(bShowPublish, bIsAppVariantSupported);
-							return this.getToolbar().show();
 						}.bind(this));
 				}
 			}.bind(this))
@@ -623,13 +622,6 @@ function(
 				this._onStackModified();
 				this.fnKeyDown = this._onKeyDown.bind(this);
 				jQuery(document).on("keydown", this.fnKeyDown);
-			}.bind(this))
-			.then(function() {
-				this.getPopupManager().setRta(this);
-				var oRelevantPopups = this.getPopupManager().getRelevantPopups();
-				if (oRelevantPopups.aDialogs || oRelevantPopups.aPopovers) {
-					return this.getShowToolbars() && this.getToolbar().bringToFront();
-				}
 			}.bind(this))
 			.then(function () {
 				// non-blocking style loading
@@ -643,12 +635,18 @@ function(
 			.then(function () {
 				return oDesignTimePromise;
 			})
+			.then(function () {
+				if (this.getShowToolbars()) {
+					return this.getToolbar().show();
+				}
+			}.bind(this))
+			.then(function () {
+				// Should be initialized after the Toolbar is rendered since it depends on it
+				this.getPopupManager().setRta(this);
+			}.bind(this))
 			.then(
 				function () {
 					this._sStatus = STARTED;
-					if (this.getShowToolbars()) {
-						this.getToolbar().bringToFront();
-					}
 					this.fireStart({
 						editablePluginsCount: this.iEditableOverlaysCount
 					});

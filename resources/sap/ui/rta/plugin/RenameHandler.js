@@ -32,7 +32,7 @@ sap.ui.define([
 	 * Provides Rename handling functionality
 	 *
 	 * @author SAP SE
-	 * @version 1.58.0
+	 * @version 1.58.1
 	 *
 	 * @constructor
 	 * @private
@@ -205,12 +205,21 @@ sap.ui.define([
 
 			this._aSelection = aSelection;
 		},
+
 		/**
 		 * @param {sap.ui.base.Event} oEvent - event object
 		 * @private
 		 */
 		_stopPropagation : function (oEvent) {
 			oEvent.stopPropagation();
+		},
+
+		/**
+		 * @param {sap.ui.base.Event} oEvent - event object
+		 * @private
+		 */
+		_preventDefault : function (oEvent) {
+			oEvent.preventDefault();
 		},
 
 		/**
@@ -256,6 +265,7 @@ sap.ui.define([
 			delete this._$editableField;
 			delete this._$oEditableControlDomRef;
 			delete this._oEditedOverlay;
+			delete this._bBlurOrKeyDownStarted;
 
 			sap.ui.getCore().getEventBus().publish('sap.ui.rta', sPluginMethodName, {
 				overlay: oOverlay
@@ -267,11 +277,30 @@ sap.ui.define([
 		 * @private
 		 */
 		_onEditableFieldBlur : function (oEvent) {
-			this._emitLabelChangeEvent()
+			return RenameHandler._handlePostRename.call(this, false);
+		},
 
-			.then(function() {
-				this.stopEdit(false);
-			}.bind(this));
+		/**
+		 * Handles events after rename has been performed
+		 * @param {boolean} bRestoreFocus - to restore focus to overlay after rename completes
+		 * @private
+		 */
+		_handlePostRename : function (bRestoreFocus, oEvent) {
+			if (!this._bBlurOrKeyDownStarted) {
+				this._bBlurOrKeyDownStarted = true;
+				if (oEvent) {
+					RenameHandler._preventDefault.call(this, oEvent);
+					RenameHandler._stopPropagation.call(this, oEvent);
+				}
+				return this._emitLabelChangeEvent()
+					.then(function (fnErrorHandler) {
+						this.stopEdit(bRestoreFocus);
+						if (typeof fnErrorHandler === "function") {
+							fnErrorHandler(); // contains startEdit() and valueStateMessage
+						}
+					}.bind(this));
+			}
+			return Promise.resolve();
 		},
 
 		/**
@@ -281,22 +310,18 @@ sap.ui.define([
 		_onEditableFieldKeydown : function (oEvent) {
 			switch (oEvent.keyCode) {
 				case KeyCodes.ENTER:
-					this._emitLabelChangeEvent()
-					.then(function() {
-						this.stopEdit(true);
-						oEvent.preventDefault();
-					}.bind(this));
-					break;
+					return RenameHandler._handlePostRename.call(this, true, oEvent);
 				case KeyCodes.ESCAPE:
 					this.stopEdit(true);
-					oEvent.preventDefault();
+					RenameHandler._preventDefault.call(this, oEvent);
 					break;
 				case KeyCodes.DELETE:
 					//Incident ID: #1680315103
-					oEvent.stopPropagation();
+					RenameHandler._stopPropagation.call(this, oEvent);
 					break;
 				default:
 			}
+			return Promise.resolve();
 		},
 
 		/**
@@ -319,7 +344,7 @@ sap.ui.define([
 			var oOverlay = sap.ui.getCore().byId(oEvent.currentTarget.id);
 			if (this.isRenameEnabled([oOverlay]) && !oEvent.metaKey && !oEvent.ctrlKey) {
 				this.startEdit(oOverlay);
-				oEvent.preventDefault();
+				RenameHandler._preventDefault.call(this, oEvent);
 			}
 		},
 

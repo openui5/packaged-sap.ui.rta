@@ -6,17 +6,15 @@
 
 sap.ui.define([
 	'sap/ui/rta/library',
-	'sap/ui/core/Popup',
 	'sap/m/HBox',
-	'sap/ui/core/BusyIndicator',
-	'sap/ui/rta/util/Animation'
+	'sap/ui/rta/util/Animation',
+	'sap/ui/dt/util/getNextZIndex'
 ],
 function(
 	library,
-	Popup,
 	HBox,
-	BusyIndicator,
-	Animation
+	Animation,
+	getNextZIndex
 ) {
 	"use strict";
 
@@ -25,10 +23,10 @@ function(
 	 *
 	 * @class
 	 * Base class for Toolbar control
-	 * @extends sap.m.Toolbar
+	 * @extends sap.m.HBox
 	 *
 	 * @author SAP SE
-	 * @version 1.58.0
+	 * @version 1.58.1
 	 *
 	 * @constructor
 	 * @private
@@ -207,17 +205,7 @@ function(
 	 * @public
 	 */
 	Base.prototype.bringToFront = function () {
-		var iNextZIndex;
-		var oBusyIndicatorPopup = BusyIndicator.oPopup;
-
-		if (oBusyIndicatorPopup && oBusyIndicatorPopup.isOpen() && oBusyIndicatorPopup.getModal()) {
-			// '-3' because overlay is on the '-2' level, see implementation of the sap.ui.core.Popup
-			iNextZIndex = oBusyIndicatorPopup._iZIndex - 3;
-		} else {
-			iNextZIndex = Popup.getNextZIndex();
-		}
-
-		this.setZIndex(iNextZIndex);
+		this.setZIndex(getNextZIndex());
 	};
 
 	/**

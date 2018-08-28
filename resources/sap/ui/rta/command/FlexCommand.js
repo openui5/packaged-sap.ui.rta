@@ -29,7 +29,7 @@ sap.ui.define([
 	 * @extends sap.ui.rta.command.BaseCommand
 	 *
 	 * @author SAP SE
-	 * @version 1.58.0
+	 * @version 1.58.1
 	 *
 	 * @constructor
 	 * @private
@@ -298,7 +298,7 @@ sap.ui.define([
 				controlType: FlUtils.getControlType(sap.ui.getCore().byId(mFlexSettings.originalSelector))
 			};
 		} else {
-			return this.getSelector() || this.getElement();
+			return this.getElement() || this.getSelector();
 		}
 	};
 

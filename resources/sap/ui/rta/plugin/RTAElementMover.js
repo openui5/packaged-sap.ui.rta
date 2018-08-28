@@ -41,7 +41,7 @@ function(
 	 * The RTAElementMover is responsible for the RTA specific adaptation of element movements.
 	 *
 	 * @author SAP SE
-	 * @version 1.58.0
+	 * @version 1.58.1
 	 *
 	 * @constructor
 	 * @private
@@ -294,7 +294,7 @@ function(
 		var bSourceAndTargetAreSame = this._compareSourceAndTarget(oSource, oTarget);
 
 		if (bSourceAndTargetAreSame) {
-			return undefined;
+			return Promise.resolve();
 		}
 		delete oSource.index;
 		delete oTarget.index;

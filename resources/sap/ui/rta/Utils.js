@@ -28,7 +28,7 @@ function(
 	 * @class Utility functionality to work with controls, e.g. iterate through aggregations, find parents, etc.
 	 *
 	 * @author SAP SE
-	 * @version 1.58.0
+	 * @version 1.58.1
 	 *
 	 * @private
 	 * @static
@@ -134,7 +134,7 @@ function(
 			} else if (!oControl.getModel()) {
 				return false;
 			} else {
-				return new Promise(function(fnResolve) {
+				return new Promise(function(fnResolve, fnReject) {
 					sap.ui.require([
 						"sap/ui/fl/fieldExt/Access"
 					], function(Access) {
@@ -150,16 +150,11 @@ function(
 
 						return Promise.resolve($Deferred)
 						.then(function(oResult) {
-							if (oResult) {
-								if (oResult.BusinessContexts) {
-									if (oResult.BusinessContexts.length > 0) {
-										oResult.EntityType = sEntityType;
-										return fnResolve(oResult);
-									}
-								}
-							} else {
-								return fnResolve(false);
+							if (oResult && Array.isArray(oResult.BusinessContexts) && oResult.BusinessContexts.length > 0) {
+								oResult.EntityType = sEntityType;
+								return fnResolve(oResult);
 							}
+							return fnResolve(false);
 						})
 						.catch(function(oError){
 							if (oError) {
@@ -171,7 +166,7 @@ function(
 							}
 							return fnResolve(false);
 						});
-					}.bind(this));
+					}.bind(this), fnReject);
 				}.bind(this));
 			}
 		}.bind(this));

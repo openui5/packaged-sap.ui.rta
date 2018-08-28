@@ -25,7 +25,7 @@ sap.ui.define([
 	 * @class The EasyRemove Plugin adds an Icon to an Overlay, which allows to trigger remove operations directly
 	 * @extends sap.ui.rta.plugin.Remove
 	 * @author SAP SE
-	 * @version 1.58.0
+	 * @version 1.58.1
 	 * @constructor
 	 * @private
 	 * @since 1.48
@@ -60,15 +60,21 @@ sap.ui.define([
 			}.bind(this);
 
 			var oDeleteButton = this._addButton(oOverlay);
-			oDeleteButton.attachBrowserEvent("contextmenu", function(oEvent) {
+			oDeleteButton.attachBrowserEvent("contextmenu", function (oEvent) {
 				oEvent.stopPropagation();
 				oEvent.preventDefault();
 			});
-			oDeleteButton.attachPress(function(oEvent) {
-				var oOverlay = sap.ui.getCore().byId(oEvent.getSource().getId().replace("-DeleteIcon", ""));
+
+			var fnOnClick = function (oEvent) {
+				var oOverlay = sap.ui.getCore().byId(oEvent.currentTarget.id.replace("-DeleteIcon", ""));
 				onDeletePressed(oOverlay);
-				oEvent.cancelBubble();
-			});
+				oEvent.stopPropagation();
+				oEvent.preventDefault();
+			};
+
+			oDeleteButton
+				.attachBrowserEvent("click", fnOnClick)
+				.attachBrowserEvent("tap", fnOnClick);
 
 		}
 

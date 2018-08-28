@@ -39,7 +39,7 @@ function(
 	 * @extends sap.ui.dt.Plugin
 	 *
 	 * @author SAP SE
-	 * @version 1.58.0
+	 * @version 1.58.1
 	 *
 	 * @constructor
 	 * @private
@@ -140,7 +140,8 @@ function(
 
 	function _isInAggregationBinding(aElements) {
 		return aElements.some(function(oStableElement) {
-			return oStableElement && OverlayUtil.isInAggregationBinding(OverlayRegistry.getOverlay(oStableElement), oStableElement.sParentAggregationName);
+			var oStableElementOverlay = OverlayRegistry.getOverlay(oStableElement);
+			return oStableElementOverlay && OverlayUtil.isInAggregationBinding(oStableElementOverlay, oStableElement.sParentAggregationName);
 		});
 	}
 
