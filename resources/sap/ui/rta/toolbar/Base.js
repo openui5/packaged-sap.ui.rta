@@ -26,7 +26,7 @@ function(
 	 * @extends sap.m.HBox
 	 *
 	 * @author SAP SE
-	 * @version 1.58.1
+	 * @version 1.58.2
 	 *
 	 * @constructor
 	 * @private
