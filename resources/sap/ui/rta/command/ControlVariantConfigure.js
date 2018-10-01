@@ -16,7 +16,7 @@ sap.ui.define([
 	 * @class
 	 * @extends sap.ui.rta.command.BaseCommand
 	 * @author SAP SE
-	 * @version 1.58.2
+	 * @version 1.58.3
 	 * @constructor
 	 * @private
 	 * @since 1.52
@@ -62,14 +62,14 @@ sap.ui.define([
 	 */
 	ControlVariantConfigure.prototype.execute = function() {
 		var oVariantManagementControl = this.getControl();
-		this.oAppComponent = flUtils.getAppComponentForControl(oVariantManagementControl);
-		this.oOuterAppComponent = flUtils.getAppComponentForControl(this.oAppComponent, true);
-		this.oModel = this.oOuterAppComponent.getModel(this.MODEL_NAME);
-		this.sVariantManagementReference = BaseTreeModifier.getSelector(oVariantManagementControl, this.oAppComponent).id;
+		this.oComponent = flUtils.getSelectorComponentForControl(oVariantManagementControl);
+		this.oAppComponent = flUtils.getAppComponentForControl(this.oComponent);
+		this.oModel = this.oAppComponent.getModel(this.MODEL_NAME);
+		this.sVariantManagementReference = BaseTreeModifier.getSelector(oVariantManagementControl, this.oComponent).id;
 
 		this._aPreparedChanges = [];
 		this.getChanges().forEach(function(mChangeProperties) {
-			mChangeProperties.appComponent = this.oOuterAppComponent;
+			mChangeProperties.appComponent = this.oAppComponent;
 			this._aPreparedChanges.push(this.oModel._setVariantProperties(this.sVariantManagementReference, mChangeProperties, true));
 		}.bind(this));
 

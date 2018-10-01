@@ -28,7 +28,7 @@ sap.ui.define([
 	 * @author SAP SE
 	 * @experimental Since 1.58
 	 * @since 1.58
-	 * @version 1.58.2
+	 * @version 1.58.3
 	 * @private
 	 * @ui5-restricted
 	*/
@@ -71,7 +71,8 @@ sap.ui.define([
 			var mMetadataProperties = oElement.getMetadata().getAllProperties();
 
 			var oDesignTimeMetadata = oOverlay.getDesignTimeMetadata();
-			var oDesignTimeMetadataData = Object.assign({}, oDesignTimeMetadata.getData());
+			// require deep cloning so that original dt-metadata is not modified
+			var oDesignTimeMetadataData = merge({}, oDesignTimeMetadata.getData());
 			var mDtProperties = oDesignTimeMetadataData.properties || {};
 			var mDtAnnotations = oDesignTimeMetadataData.annotations || {};
 			var vLabel = oDesignTimeMetadataData.getLabel;
@@ -80,18 +81,20 @@ sap.ui.define([
 				[
 					oProperty._getConsolidatedAnnotations(mDtAnnotations, oElement),
 					oProperty._getConsolidatedProperties(mDtProperties || {}, mMetadataProperties, oElement),
-					oProperty._getResolvedFunction(vLabel, oElement)
+					oProperty._getResolvedFunction(vLabel, oElement),
+					oProperty._getResolvedLinks(oDesignTimeMetadataData.links, oElement)
 				]
-			).then(function (aPromiseResults) {
-				return Object.assign(
-					{},
-					aPromiseResults[0] && !jQuery.isEmptyObject(aPromiseResults[0]) && {annotations: aPromiseResults[0]},
-					aPromiseResults[1] && {properties: aPromiseResults[1]},
-					aPromiseResults[2] && {label: aPromiseResults[2]},
-					oDesignTimeMetadataData.name && {name: oDesignTimeMetadata.getName(oElement)},
-					oDesignTimeMetadataData.links && {links: oProperty._getEvaluatedLinks(oDesignTimeMetadataData.links, oElement)}
-				);
-			});
+			)
+				.then(function (aPromiseResults) {
+					return Object.assign(
+						{},
+						aPromiseResults[0] && !jQuery.isEmptyObject(aPromiseResults[0]) && {annotations: aPromiseResults[0]},
+						aPromiseResults[1] && {properties: aPromiseResults[1]},
+						aPromiseResults[2] && {label: aPromiseResults[2]},
+						oDesignTimeMetadataData.name && {name: oDesignTimeMetadata.getName(oElement)},
+						!jQuery.isEmptyObject(aPromiseResults[3]) && {links: aPromiseResults[3]}
+					);
+				});
 		};
 
 		/**
@@ -113,7 +116,11 @@ sap.ui.define([
 						virtual: false,
 						type: mMetadataObj[sKey].type,
 						name: mMetadataObj[sKey].name,
-						ignore: false
+						ignore: false,
+						group: mMetadataObj[sKey].group,
+						deprecated: mMetadataObj[sKey].deprecated,
+						defaultValue: mMetadataObj[sKey].defaultValue,
+						visibility: mMetadataObj[sKey].visibility
 					};
 					var mBindingInfo = oProperty._getBindingInfo(sKey, oElement);
 					Object.assign(
@@ -128,45 +135,35 @@ sap.ui.define([
 					.map(function (sKey) {
 						return oProperty._getResolvedFunction(mDtObj[sKey].ignore, oElement)
 							.then(function (bIgnore) {
-								var mFiltered = {};
+
 								if (typeof bIgnore !== "boolean" || typeof bIgnore === "undefined") {
 									throw DtUtil.createError(
 										"services.Property#get",
 										"Invalid ignore property value found in designtime for element with id " + oElement.getId() + " .", "sap.ui.rta"
 									);
 								}
+
 								// ensure ignore function is replaced by a boolean value
 								if (bIgnore) {
 									// check if ignore property is set to true - remove from metadata object, if present
 									delete mFilteredMetadataObject[sKey];
 								} else if (!mFilteredMetadataObject[sKey]) {
 									//  if not available in control metadata
-									// virtual properties
 									if (mDtObj[sKey].virtual === true) {
-										// evaluate if virtual - not found in metadata object
-										mFiltered[sKey] = {
-											value: mDtObj[sKey].get(oElement),
-											virtual: true,
-											type: mDtObj[sKey].type,
-											name: mDtObj[sKey].name,
-											ignore: bIgnore
-										};
-										var mBindingInfo = oProperty._getBindingInfo(sKey, oElement);
-										Object.assign(
-											mFiltered[sKey],
-											mBindingInfo && {binding: mBindingInfo},
-											mDtObj[sKey].possibleValues && {possibleValues: mDtObj[sKey].possibleValues}
-										);
+										// virtual properties
+										return oProperty._getEvaluatedVirtualProperty(mDtObj, sKey, oElement);
 									} else {
 										// dt-metadata properties
-										mFiltered[sKey] = {
+										var mEvaluatedProperty = {};
+										mEvaluatedProperty[sKey] = {
 											value: mDtObj[sKey],
 											virtual: false,
 											ignore: bIgnore
 										};
+										return mEvaluatedProperty;
 									}
 								}
-								return mFiltered;
+								return {};
 							});
 					})
 			)
@@ -174,6 +171,43 @@ sap.ui.define([
 					return aFilteredResults.reduce(function (mConsolidatedObject, oFilteredResult) {
 						return Object.assign(mConsolidatedObject, oFilteredResult);
 					}, mFilteredMetadataObject);
+				});
+		};
+
+		/**
+		 * Returns evaluated virtual property for direct consumption by the service
+		 *
+		 * @param {object} mDtObj - dt-metadata properties object
+		 * @param {object} sPropertyName - virtual property name
+		 * @param {sap.ui.core.Element} oElement - element for which the virtual property needs to be evaluated
+		 *
+		 * @return {Promise} promise resolving to the evaluated virtual property object
+		 * @private
+		 */
+		oProperty._getEvaluatedVirtualProperty = function(mDtObj, sPropertyName, oElement) {
+			var mEvaluatedProperty = {};
+			// evaluate if virtual - not found in metadata object
+			mEvaluatedProperty[sPropertyName] = {
+				value: mDtObj[sPropertyName].get(oElement),
+				virtual: true,
+				type: mDtObj[sPropertyName].type,
+				name: mDtObj[sPropertyName].name,
+				group: mDtObj[sPropertyName].group,
+				ignore: false
+			};
+			var mBindingInfo = oProperty._getBindingInfo(sPropertyName, oElement);
+
+			// evaluate possibleValues
+			return oProperty._getResolvedFunction(mDtObj[sPropertyName].possibleValues, oElement)
+				.then(function(vPossibleValues) {
+
+					Object.assign(
+						mEvaluatedProperty[sPropertyName],
+						mBindingInfo && {binding: mBindingInfo},
+						vPossibleValues && {possibleValues: vPossibleValues}
+					);
+
+					return mEvaluatedProperty;
 				});
 		};
 
@@ -191,24 +225,27 @@ sap.ui.define([
 			return Promise.all(
 				Object.keys(mDtObj)
 					.map(function (sKey) {
-						return oProperty._getResolvedFunction(mDtObj[sKey].ignore, oElement).then(function (bIgnore) {
-							var mFiltered = {};
-							if (typeof bIgnore !== "boolean" && typeof bIgnore !== "undefined") {
-								throw DtUtil.createError(
-									"services.Property#get",
-									"Invalid ignore property value found in designtime for element with id " + oElement.getId() + " .", "sap.ui.rta"
-								);
+						return oProperty._getResolvedFunction(mDtObj[sKey].ignore, oElement)
+							.then(function (bIgnore) {
+								var mFiltered = {};
+								if (typeof bIgnore !== "boolean" && typeof bIgnore !== "undefined") {
+									throw DtUtil.createError(
+										"services.Property#get",
+										"Invalid ignore property value found in designtime for element with id " + oElement.getId() + " .", "sap.ui.rta"
+									);
 							}
 							// to ensure ignore function is replaced by a boolean value
 							mDtObj[sKey].ignore = bIgnore;
 							if (!bIgnore) {
-								mFiltered[sKey] = Object.assign(
-									{},
-									mDtObj[sKey],
-									mDtObj[sKey].links && {links: oProperty._getEvaluatedLinks(mDtObj[sKey].links, oElement)}
-									);
+								mFiltered[sKey] = Object.assign({}, mDtObj[sKey]);
+								return oProperty._getResolvedLinks(mFiltered[sKey].links, oElement)
+									.then(function (mLinks) {
+										if (!jQuery.isEmptyObject(mLinks)) {
+											mFiltered[sKey].links = mLinks;
+										}
+										return mFiltered;
+									});
 							}
-							return mFiltered;
 						});
 					})
 			)
@@ -235,30 +272,37 @@ sap.ui.define([
 		 *    }
 		 *
 		 * @param {map} mLinks - links map
-		 * @param {sap.ui.core.Element} oElement - element for which 'links' object is required to be evaluated
+		 * @param {sap.ui.core.Element} oElement - element for which 'links' object is required to be resolved
 		 *
-		 * @return {map} evaluated links map
+		 * @return {Promise} promise resolving to links map
 		 * @private
 		 */
-		oProperty._getEvaluatedLinks = function (mLinks, oElement){
-			var mEvaluatedLinks = {};
-			// clone links object
-			Object.assign(mEvaluatedLinks, mLinks);
-			if (!jQuery.isEmptyObject(mEvaluatedLinks)) {
+		oProperty._getResolvedLinks = function (mLinks, oElement){
+			var aTextPromises = [];
+			var mResolvedLinks = Object.assign({}, mLinks);
 
-				Object.keys(mEvaluatedLinks).forEach(function (sLinkName) {
-					if (Array.isArray(mEvaluatedLinks[sLinkName])) {
-						mEvaluatedLinks[sLinkName].map(function (oLink) {
-							if (typeof oLink.text === "function") {
-								oLink.text = oLink.text(oElement);
-							}
-							return oLink;
-						});
-					}
+			Object.keys(mResolvedLinks).forEach(function (sLinkName) {
+				if (Array.isArray(mResolvedLinks[sLinkName])) {
+					mResolvedLinks[sLinkName].forEach(function (oLink) {
+
+						aTextPromises.push(
+							DtUtil.wrapIntoPromise(function () {
+								if (typeof oLink.text === "function") {
+									return oLink.text(oElement);
+								}
+							})(oLink)
+								.then(function (sLinkText) {
+									oLink.text = sLinkText ? sLinkText : oLink.text;
+								})
+						);
+
+					});
+				}
+			});
+			return Promise.all(aTextPromises)
+				.then(function () {
+					return mResolvedLinks;
 				});
-
-			}
-			return mEvaluatedLinks;
 		};
 
 		/**
@@ -305,12 +349,9 @@ sap.ui.define([
 		 */
 		oProperty._getResolvedFunction = function (vProperty, oElement) {
 			return DtUtil.wrapIntoPromise(function () {
-				if (typeof vProperty === "function") {
-					return vProperty(oElement);
-				} else if (typeof vProperty === "boolean" || typeof vProperty === "string") {
-					return vProperty;
-				}
-				return false;
+				return typeof vProperty === "function"
+					? vProperty(oElement) // could return a promise
+					: (vProperty || false);
 			})(vProperty, oElement);
 		};
 

@@ -15,7 +15,7 @@ sap.ui.define(function () {
 	 * @author SAP SE
 	 * @experimental Since 1.58
 	 * @since 1.58
-	 * @version 1.58.2
+	 * @version 1.58.3
 	 * @private
 	 * @ui5-restricted
 	*/
@@ -65,7 +65,7 @@ sap.ui.define(function () {
 				 * Adds the specified controls to the current selection.
 				 *
 				 * @method sap.ui.rta.service.Selection.add
-				 * @param {string|string[]} vControlIdgit s - Control IDs to be selected
+				 * @param {string|string[]} vControlIds - Control IDs to be selected
 				 * @return {boolean} true if the selection has changed
 				 * @public
 				 */

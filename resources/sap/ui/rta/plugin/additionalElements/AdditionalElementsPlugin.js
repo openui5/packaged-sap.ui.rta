@@ -173,7 +173,7 @@ sap.ui.define([
 	 * @class The plugin allows to add additional elements that exist either hidden in the UI or in the OData service
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.58.2
+	 * @version 1.58.3
 	 * @constructor
 	 * @private
 	 * @since 1.44
@@ -613,7 +613,7 @@ sap.ui.define([
 			if (mParents.parentOverlay.getVariantManagement && oChangeHandler && oChangeHandler.revertChange) {
 				sVariantManagementReference = mParents.parentOverlay.getVariantManagement();
 			}
-			var oManifest = FlUtils.getAppComponentForControl(mParents.parent, true).getManifest();
+			var oManifest = FlUtils.getAppComponentForControl(mParents.parent).getManifest();
 			var sServiceUri = FlUtils.getODataServiceUriFromManifest(oManifest);
 			return this.getCommandFactory().getCommandFor(mParents.parent, "addODataProperty", {
 				newControlId: Utils.createFieldLabelId(oRefControlForId, oSelectedElement.entityType, oSelectedElement.bindingPath),
