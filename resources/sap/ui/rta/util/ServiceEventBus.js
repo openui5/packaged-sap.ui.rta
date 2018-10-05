@@ -19,7 +19,7 @@ function(
 	 *
 	 * @extends sap.ui.core.EventBus
 	 * @author SAP SE
-	 * @version 1.56.11
+	 * @version 1.56.12
 	 * @private
 	 * @since 1.56.0
 	 * @alias sap.ui.rta.util.ServiceEventBus
