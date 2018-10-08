@@ -32,7 +32,7 @@ function(
 	 * @extends sap.ui.dt.plugin.ControlDragDrop
 	 *
 	 * @author SAP SE
-	 * @version 1.52.19
+	 * @version 1.52.20
 	 *
 	 * @constructor
 	 * @private
