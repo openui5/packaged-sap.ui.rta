@@ -57,7 +57,7 @@ sap.ui.define([
 	 * @alias sap.ui.rta.Client
 	 * @author SAP SE
 	 * @since 1.56.0
-	 * @version 1.58.3
+	 * @version 1.58.4
 	 * @private
 	 * @ui5-restricted
 	 */
