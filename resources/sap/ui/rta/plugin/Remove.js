@@ -26,7 +26,7 @@ sap.ui.define([
 	 * @class The Remove allows trigger remove operations on the overlay
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.56.12
+	 * @version 1.56.13
 	 * @constructor
 	 * @private
 	 * @since 1.34
