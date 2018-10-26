@@ -12,7 +12,7 @@ sap.ui.define([
 	'sap/ui/dt/OverlayRegistry',
 	'sap/ui/dt/OverlayUtil',
 	'sap/ui/dt/Util',
-	'sap/ui/fl/changeHandler/BaseTreeModifier',
+	'sap/ui/core/util/reflection/JsControlTreeModifier',
 	'sap/ui/fl/Utils',
 	'sap/ui/fl/variants/VariantManagement',
 	'sap/ui/base/ManagedObject',
@@ -27,7 +27,7 @@ sap.ui.define([
 	OverlayRegistry,
 	OverlayUtil,
 	DtUtil,
-	BaseTreeModifier,
+	JsControlTreeModifier,
 	flUtils,
 	VariantManagement,
 	ManagedObject,
@@ -45,7 +45,7 @@ sap.ui.define([
 	 * @class The ControlVariant allows propagation of variantManagement key
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.58.4
+	 * @version 1.58.5
 	 * @constructor
 	 * @private
 	 * @since 1.50
@@ -97,7 +97,7 @@ sap.ui.define([
 			var vAssociationElement = oControl.getFor(),
 				aVariantManagementTargetElements;
 
-			sVariantManagementReference = BaseTreeModifier.getSelector(oControl, flUtils.getComponentForControl(oControl)).id;
+			sVariantManagementReference = JsControlTreeModifier.getSelector(oControl, flUtils.getComponentForControl(oControl)).id;
 
 			if (!vAssociationElement ||
 				(Array.isArray(vAssociationElement) && vAssociationElement.length === 0)) {
@@ -565,6 +565,7 @@ sap.ui.define([
 		var regexForCopy = new RegExp(sCopyTextSingle + "+");
 		var regexForIncrement = new RegExp(sCopyTextMultiple);
 		var sTitleTrimmed;
+		// calculate index for counter and title
 		var iIndexForCounter = sCopyTextMultiple.lastIndexOf("(.*)") > sCopyTextMultiple.lastIndexOf("([0-9]+)") ? 1 : 2;
 		var iIndexForTrimmedTitle = (iIndexForCounter === 1) ? 2 : 1;
 		var iTitleCounter = 0;
@@ -590,8 +591,11 @@ sap.ui.define([
 					return;
 				}
 				/* First copy with counter is matched, if not, then only copy is matched */
-				if (aRegexExecOnVariantTitle.length === 3 &&
-					sTitleTrimmed === aRegexExecOnVariantTitle[iIndexForTrimmedTitle]) {
+				if (
+					aRegexExecOnVariantTitle.length === 3
+					&& sTitleTrimmed === aRegexExecOnVariantTitle[iIndexForTrimmedTitle]
+					&& iTitleCounter <= parseInt(aRegexExecOnVariantTitle[iIndexForCounter], 10)
+				) {
 					// Extract integer part & increment counter
 					iTitleCounter =
 						aRegexExecOnVariantTitle[iIndexForCounter]

@@ -312,7 +312,7 @@ function(
 
 			mSettings = Object.assign({}, mSettings, {
 				element : bIsUiElement ? vElement : undefined,
-				selector : bIsUiElement ? undefined : vElement,
+				selector : bIsUiElement ? null : vElement,
 				name : sCommand
 			});
 
@@ -365,7 +365,7 @@ function(
 	 * @extends sap.ui.base.ManagedObject
 	 *
 	 * @author SAP SE
-	 * @version 1.58.4
+	 * @version 1.58.5
 	 *
 	 * @constructor
 	 * @private
