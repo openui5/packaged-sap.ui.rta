@@ -26,7 +26,7 @@ function (
 	 * @author SAP SE
 	 * @experimental Since 1.58
 	 * @since 1.58
-	 * @version 1.56.14
+	 * @version 1.56.15
 	 * @private
 	 * @ui5-restricted
 	*/
