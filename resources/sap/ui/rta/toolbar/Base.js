@@ -30,7 +30,7 @@ function(
 	 * @extends sap.m.Toolbar
 	 *
 	 * @author SAP SE
-	 * @version 1.52.24
+	 * @version 1.52.25
 	 *
 	 * @constructor
 	 * @private
