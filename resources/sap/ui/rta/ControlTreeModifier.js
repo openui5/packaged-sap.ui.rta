@@ -15,7 +15,7 @@ sap.ui.define(["sap/ui/fl/changeHandler/JsControlTreeModifier"], function (JsCon
 	 * @extends sap.ui.fl.changehandler.jsControlTreeModifier
 	 *
 	 * @author SAP SE
-	 * @version 1.52.27
+	 * @version 1.52.28
 	 *
 	 * @private
 	 * @since 1.44
