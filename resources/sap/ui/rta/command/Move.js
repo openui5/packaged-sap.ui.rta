@@ -12,7 +12,7 @@ sap.ui.define(['jquery.sap.global', 'sap/ui/rta/command/FlexCommand'], function(
 	 * @class
 	 * @extends sap.ui.rta.command.FlexCommand
 	 * @author SAP SE
-	 * @version 1.52.30
+	 * @version 1.52.31
 	 * @constructor
 	 * @private
 	 * @since 1.34
