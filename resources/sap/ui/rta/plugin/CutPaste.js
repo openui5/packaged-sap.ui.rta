@@ -34,7 +34,7 @@ function(
 	 * @extends sap.ui.dt.plugin.CutPaste
 	 *
 	 * @author SAP SE
-	 * @version 1.52.32
+	 * @version 1.52.34
 	 *
 	 * @constructor
 	 * @private
