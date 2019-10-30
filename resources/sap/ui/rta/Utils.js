@@ -27,7 +27,7 @@ function(
 	 * @class Utility functionality to work with controls, e.g. iterate through aggregations, find parents, etc.
 	 *
 	 * @author SAP SE
-	 * @version 1.52.35
+	 * @version 1.52.36
 	 *
 	 * @private
 	 * @static
