@@ -42,7 +42,7 @@ function (
 	 * Constructor for a new sap.ui.rta.util.PopupManager
 	 * @extends sap.ui.base.ManagedObject
 	 * @author SAP SE
-	 * @version 1.52.42
+	 * @version 1.52.43
 	 * @constructor
 	 * @private
 	 * @since 1.48
