@@ -25,7 +25,7 @@ function(
 	 * @class The Selection plugin allows you to select or focus overlays with mouse or keyboard and navigate to others.
 	 * @extends sap.ui.rta.plugin.Plugin
 	 * @author SAP SE
-	 * @version 1.52.45
+	 * @version 1.52.46
 	 * @constructor
 	 * @private
 	 * @since 1.34

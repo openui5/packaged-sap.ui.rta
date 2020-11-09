@@ -20,7 +20,7 @@ function(
 	 * @extends sap.ui.rta.toolbar.Adaptation
 	 *
 	 * @author SAP SE
-	 * @version 1.52.45
+	 * @version 1.52.46
 	 *
 	 * @constructor
 	 * @private
